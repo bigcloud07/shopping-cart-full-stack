@@ -14,8 +14,7 @@ export default class ProductController {
     try {
       const products = Array.from(this.#db.PRODUCT_TABLE.entries()).map(
         ([id, productData]) => {
-          const product = new Product(productData);
-          const { name, imgUrl, price } = product.getProduct();
+          const { name, imgUrl, price } = productData;
           return {
             id,
             name,
