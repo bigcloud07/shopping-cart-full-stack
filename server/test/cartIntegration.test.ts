@@ -73,6 +73,46 @@ describe("PATCH /cart/:productId", () => {
     });
   });
 
+  it("Success[status:200] 수량 변경 후 GET /cart에서 상품 정보가 유지된다.", async () => {
+    const testDb = {
+      PRODUCT_TABLE: new Map(),
+      CART_TABLE: new Map(),
+    };
+
+    testDb.CART_TABLE.set(1, cartItem_1);
+    testDb.CART_TABLE.set(2, cartItem_2);
+
+    const app = createApp(testDb);
+    await request(app)
+      .patch("/cart/1")
+      .type("json")
+      .send({ quantity: 5 })
+      .expect(200);
+
+    const response = await request(app).get("/cart").expect(200);
+    expect(response.body).toEqual({
+      result: "success",
+      data: {
+        cartItems: [
+          {
+            productId: 1,
+            productName: "상품이름A",
+            productImg: "/src.com",
+            productPrice: 35000,
+            quantity: 5,
+          },
+          {
+            productId: 2,
+            productName: "상품이름B",
+            productImg: "/src.com",
+            productPrice: 25000,
+            quantity: 2,
+          },
+        ],
+      },
+    });
+  });
+
   it("Error[Status:400] 변경 수량이 유효하지 않을 때", async () => {
     const testDb = {
       PRODUCT_TABLE: new Map(),
