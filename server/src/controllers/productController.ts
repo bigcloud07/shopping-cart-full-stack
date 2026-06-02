@@ -54,14 +54,10 @@ export default class ProductController {
           message: "해당하는 상품이 없습니다.",
         });
       }
-
-      const result = this.#db.PRODUCT_TABLE.get(numberId);
+      const { name, imgUrl, price } = this.#db.PRODUCT_TABLE.get(numberId)!;
       res.status(200).json({
         result: "success",
-        data: {
-          id: numberId,
-          ...result,
-        },
+        data: { id: numberId, name, imgUrl, price },
       });
     } catch (error) {
       res.status(500).json({
