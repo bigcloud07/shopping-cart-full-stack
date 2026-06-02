@@ -46,7 +46,7 @@ export default class Product {
     if (name.length === 0 || Product.MAX_NAME_LENGTH < name.length) {
       errors.push(productErrors.name);
     }
-    if (price < 0) {
+    if (price <= 0) {
       errors.push(productErrors.price);
     }
     if (
