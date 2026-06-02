@@ -28,7 +28,7 @@ export function createApp(db: DBInterface) {
     cartController.getAllItems(req, res);
   });
   app.patch("/cart/:productId", (req, res) => {
-    cartController.upqdateQuantitiy(req, res);
+    cartController.updateQuantitiy(req, res);
   });
   app.delete("/cart/:productId", (req, res) => {
     cartController.deleteItem(req, res);
