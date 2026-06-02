@@ -75,7 +75,8 @@ export default class CartController {
         });
       }
 
-      this.#db.CART_TABLE.set(id, quantity);
+      const existingItem = this.#db.CART_TABLE.get(id)!;
+      this.#db.CART_TABLE.set(id, { ...existingItem, quantity: Number(quantity) });
 
       res.status(200).json({
         result: "success",
