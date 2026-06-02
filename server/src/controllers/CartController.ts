@@ -42,7 +42,7 @@ export default class CartController {
     }
   };
 
-  upqdateQuantitiy = (req: Request, res: Response) => {
+  updateQuantitiy = (req: Request, res: Response) => {
     try {
       const { productId } = req.params;
       const { quantity } = req.body;
