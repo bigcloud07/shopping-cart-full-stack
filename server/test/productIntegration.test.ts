@@ -1,7 +1,7 @@
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { Express } from "express";
-import { type DBInterface } from "../src/db/db.js";
+import { type DBInterface, ProductDB } from "../src/db/db.js";
 
 const data_1 = {
   name: "상품이름A",
@@ -20,7 +20,7 @@ describe("Products API", () => {
 
   beforeAll(() => {
     testDb = {
-      PRODUCT_TABLE: new Map(),
+      PRODUCT_TABLE: new ProductDB(),
       CART_TABLE: new Map(),
     };
     app = createApp(testDb);
