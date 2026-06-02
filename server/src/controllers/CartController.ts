@@ -76,7 +76,10 @@ export default class CartController {
       }
 
       const existingItem = this.#db.CART_TABLE.get(id)!;
-      this.#db.CART_TABLE.set(id, { ...existingItem, quantity: Number(quantity) });
+      this.#db.CART_TABLE.set(id, {
+        ...existingItem,
+        quantity: Number(quantity),
+      });
 
       res.status(200).json({
         result: "success",
@@ -95,10 +98,12 @@ export default class CartController {
       const { productId } = req.params;
       const id = Number(productId);
 
-      this.#db.CART_TABLE.delete(id);
-      if (!id || Number.isNaN(id)) {
+      if (!id || Number.isNaN(id) || id < 1) {
         return res.status(204).json();
       }
+
+      this.#db.CART_TABLE.delete(id);
+
       res.status(204).json();
     } catch (error) {
       res.status(500).json();
