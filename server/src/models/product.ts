@@ -7,7 +7,7 @@ import {
 export interface ProductData {
   name: string;
   price: number;
-  imgUrl: string;
+  imgUrl?: string;
 }
 
 export default class Product {
@@ -24,7 +24,7 @@ export default class Product {
   }: {
     name: string;
     price: number;
-    imgUrl: string;
+    imgUrl?: string;
   }) {
     this.#validate({ name, price, imgUrl });
 
@@ -40,7 +40,7 @@ export default class Product {
   }: {
     name: string;
     price: number;
-    imgUrl: string;
+    imgUrl?: string;
   }) => {
     const errors: ProductError[] = [];
     if (name.length === 0 || Product.MAX_NAME_LENGTH < name.length) {
@@ -65,7 +65,7 @@ export default class Product {
     return {
       name: this.#name,
       price: this.#price,
-      imgUrl: this.#imgUrl ?? "default",
+      imgUrl: this.#imgUrl ?? "https://imgstore.com/image.png",
     };
   }
 }
