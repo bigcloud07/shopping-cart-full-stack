@@ -95,7 +95,7 @@ Success
 
 Success
 
-````js
+```js
 // Request Body
 
 {
@@ -103,12 +103,24 @@ Success
   img: "/src.com",
   price: 35000,
 }
+```
 
+Error
+
+```js
 // Response Status: 201
 // No Content
+```
 
+```js
+// Response status 400,
+// name 또는 price 필드가 누락된 경우
 
-400 Error
+{
+  result: "error",
+  message: "형식이 비었습니다",
+}
+```
 
 ```js
 // Response status 400,
@@ -135,7 +147,7 @@ Success
     }
   ]
 }
-````
+```
 
 </details>
 

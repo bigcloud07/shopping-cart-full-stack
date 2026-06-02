@@ -97,6 +97,19 @@ describe("Products API", () => {
       expect(testDb.PRODUCT_TABLE.size).toBe(1);
     });
 
+    it("Error-status:400 name 또는 price 필드가 누락된 경우", async () => {
+      const response = await request(app)
+        .post("/products")
+        .type("json")
+        .send({ imgUrl: "https://src.com/image.png" })
+        .expect(400);
+
+      expect(response.body).toEqual({
+        result: "error",
+        message: "형식이 비었습니다",
+      });
+    });
+
     it("Error-status:400 필수 입력 유효성 검증 실패 시 필드 에러 메세지를 반환한다", async () => {
       const response = await request(app)
         .post("/products")
