@@ -5,11 +5,9 @@ import { ProductValidationError } from "../errors/productError.js";
 
 export default class ProductController {
   #db;
-  #index;
 
   constructor(db: DBInterface) {
     this.#db = db;
-    this.#index = 0;
   }
 
   getProductAll = (req: Request, res: Response) => {
@@ -80,9 +78,7 @@ export default class ProductController {
         return res.status(400).json({ message: "형식이 비었습니다" });
       }
       const product = new Product({ name, price, imgUrl });
-      this.#db.PRODUCT_TABLE.set(this.#index, product.getProduct());
-      this.#index += 1;
-
+      this.#db.PRODUCT_TABLE.insert(product.getProduct());
       res.status(201).json();
     } catch (error) {
       if (error instanceof ProductValidationError) {
