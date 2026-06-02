@@ -48,7 +48,13 @@ export default class CartController {
       const { quantity } = req.body;
       const id = Number(productId);
 
-      if (Number.isNaN(Number(quantity)) || Number.isNaN(id)) {
+      if (
+        Number.isNaN(Number(quantity)) ||
+        Number.isNaN(id) ||
+        !Number.isInteger(Number(quantity)) ||
+        Number(quantity) < 1 ||
+        Number(quantity) > 99
+      ) {
         return res.status(400).json({
           result: "error",
           message: "수량이 유효하지 않습니다.",
