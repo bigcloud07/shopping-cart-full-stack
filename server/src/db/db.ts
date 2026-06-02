@@ -16,12 +16,25 @@ export class ProductDB {
     if (id >= this.#nextId) this.#nextId = id + 1;
   }
 
-  get(id: number) { return this.#table.get(id); }
-  has(id: number) { return this.#table.has(id); }
-  delete(id: number) { this.#table.delete(id); }
-  entries() { return this.#table.entries(); }
-  get size() { return this.#table.size; }
-  clear() { this.#table.clear(); this.#nextId = 1; }
+  get(id: number) {
+    return this.#table.get(id);
+  }
+  has(id: number) {
+    return this.#table.has(id);
+  }
+  delete(id: number) {
+    this.#table.delete(id);
+  }
+  entries() {
+    return this.#table.entries();
+  }
+  get size() {
+    return this.#table.size;
+  }
+  clear() {
+    this.#table.clear();
+    this.#nextId = 1;
+  }
 }
 
 export interface DBInterface {

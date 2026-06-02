@@ -12,12 +12,11 @@ export interface ProductErrors {
 
 export class ProductValidationError extends Error {
   status = 400;
-  message = "요청 값이 올바르지 않습니다.";
   errors: ProductError[];
 
   constructor(errors: ProductError[]) {
     super("요청 값이 올바르지 않습니다.");
-    this.errors = errors;
+    this.errors = errors.map(e => ({ ...e }));
   }
 }
 export const productErrors: ProductErrors = {
