@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
+import { OrderConfirm } from "../components/OrderConfirm";
 import { OrderSummary } from "../components/OrderSummary";
 import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
@@ -9,6 +10,7 @@ import type { CartItem, cartItemResponse } from "../type/type";
 export const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
     const saved = localStorage.getItem("selectedIds");
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -48,9 +50,11 @@ export const Cart = () => {
     initialFetch();
   }, []);
 
-  const totalOrderAmount = cartItems
-    .filter((item) => selectedIds.has(item.productId))
-    .reduce((acc, item) => acc + item.productPrice * item.quantity, 0);
+  const selectedItems = cartItems.filter((item) => selectedIds.has(item.productId));
+  const totalOrderAmount = selectedItems.reduce(
+    (acc, item) => acc + item.productPrice * item.quantity, 0
+  );
+  const totalQuantity = selectedItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const onPlus = async ({
     productId,
@@ -128,17 +132,32 @@ export const Cart = () => {
     <>
       <Header />
       <Title />
-      <ItemList
-        items={cartItems}
-        onPlus={onPlus}
-        onMinus={onMinus}
-        selectedIds={selectedIds}
-        onSelectAll={onSelectAll}
-        onSelectItem={onSelectItem}
-        onDelete={onDelete}
-      />
-      <OrderSummary totalOrderAmount={totalOrderAmount} />
-      <button disabled={selectedIds.size === 0}>주문 확인</button>{" "}
+      {isConfirming ? (
+        <OrderConfirm
+          itemCount={selectedItems.length}
+          totalQuantity={totalQuantity}
+          totalAmount={totalOrderAmount}
+        />
+      ) : (
+        <>
+          <ItemList
+            items={cartItems}
+            onPlus={onPlus}
+            onMinus={onMinus}
+            selectedIds={selectedIds}
+            onSelectAll={onSelectAll}
+            onSelectItem={onSelectItem}
+            onDelete={onDelete}
+          />
+          <OrderSummary totalOrderAmount={totalOrderAmount} />
+          <button
+            disabled={selectedIds.size === 0}
+            onClick={() => setIsConfirming(true)}
+          >
+            주문 확인
+          </button>
+        </>
+      )}
     </>
   );
 };
