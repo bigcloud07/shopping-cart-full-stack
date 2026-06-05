@@ -16,6 +16,7 @@ export const OrderConfirm = ({
       <p>최종 결제 금액을 확인해 주세요.</p>
       <div>총 결제 금액</div>
       <div>{totalAmount.toLocaleString()}원</div>
+      <button disabled>결제하기</button>
     </div>
   );
 };
