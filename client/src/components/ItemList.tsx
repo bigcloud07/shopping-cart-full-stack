@@ -1,5 +1,35 @@
+import styled from "styled-components";
 import type { CartItem } from "../type/type";
 import { Item } from "./Item";
+
+const Subtitle = styled.p`
+  padding: 0 20px 16px;
+  color: #555;
+  font-size: 14px;
+`;
+
+const SelectAllRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #eee;
+`;
+
+const Checkbox = styled.input`
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+`;
+
+const SelectAllLabel = styled.span`
+  font-size: 14px;
+`;
+
+const List = styled.ul`
+  padding: 0;
+  margin: 0;
+`;
 
 interface ItemListProps {
   items: Array<CartItem>;
@@ -11,28 +41,19 @@ interface ItemListProps {
   onDelete: (productId: Pick<CartItem, "productId">) => void;
 }
 
-export const ItemList = ({
-  items,
-  onPlus,
-  onMinus,
-  onSelectItem,
-  onSelectAll,
-  onDelete,
-  selectedIds,
-}: ItemListProps) => {
-  console.log(items);
-
+export const ItemList = ({ items, onPlus, onMinus, onSelectItem, onSelectAll, onDelete, selectedIds }: ItemListProps) => {
   return (
-    <>
-      <p>현재 {items.length}종류의 상품이 담겨있습니다.</p>
-      <ul>
-        <input
+    <div>
+      <Subtitle>현재 {items.length}종류의 상품이 담겨있습니다.</Subtitle>
+      <SelectAllRow>
+        <Checkbox
           type="checkbox"
           onChange={onSelectAll}
           checked={items.length > 0 && selectedIds.size === items.length}
-        ></input>
-        <p>전체 선택</p>
-
+        />
+        <SelectAllLabel>전체선택</SelectAllLabel>
+      </SelectAllRow>
+      <List>
         {items.map((item) => (
           <Item
             key={item.productId}
@@ -44,7 +65,7 @@ export const ItemList = ({
             onDelete={onDelete}
           />
         ))}
-      </ul>
-    </>
+      </List>
+    </div>
   );
 };

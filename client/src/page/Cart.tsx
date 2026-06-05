@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
 import { OrderConfirm } from "../components/OrderConfirm";
@@ -6,6 +7,41 @@ import { OrderSummary } from "../components/OrderSummary";
 import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
 import type { CartItem, cartItemResponse } from "../type/type";
+
+const CenterBox = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  font-size: 16px;
+  color: #555;
+`;
+
+const Spacer = styled.div`
+  height: 80px;
+`;
+
+const BottomBar = styled.div`
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: #000;
+`;
+
+const OrderButton = styled.button<{ $disabled: boolean }>`
+  width: 100%;
+  padding: 20px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
+`;
 
 export const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -119,7 +155,7 @@ export const Cart = () => {
       <>
         <Header />
         <Title />
-        <Spinner />
+        <CenterBox><Spinner /></CenterBox>
       </>
     );
   }
@@ -129,7 +165,7 @@ export const Cart = () => {
       <>
         <Header />
         <Title />
-        <div>장바구니에 상품이 없습니다.</div>
+        <CenterBox>장바구니에 상품이 없습니다.</CenterBox>
       </>
     );
   }
@@ -156,12 +192,16 @@ export const Cart = () => {
             onDelete={onDelete}
           />
           <OrderSummary totalOrderAmount={totalOrderAmount} />
-          <button
-            disabled={selectedIds.size === 0}
-            onClick={() => setIsConfirming(true)}
-          >
-            주문 확인
-          </button>
+          <Spacer />
+          <BottomBar>
+            <OrderButton
+              $disabled={selectedIds.size === 0}
+              disabled={selectedIds.size === 0}
+              onClick={() => setIsConfirming(true)}
+            >
+              주문 확인
+            </OrderButton>
+          </BottomBar>
         </>
       )}
     </>

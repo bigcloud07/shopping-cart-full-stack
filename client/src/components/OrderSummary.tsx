@@ -1,20 +1,58 @@
-export const OrderSummary = ({
-  totalOrderAmount,
-}: {
-  totalOrderAmount: number;
-}) => {
+import styled from "styled-components";
+
+const Wrapper = styled.div`
+  border-top: 1px solid #eee;
+  margin-top: 8px;
+`;
+
+const InfoText = styled.p`
+  padding: 14px 20px;
+  font-size: 13px;
+  color: #555;
+`;
+
+const RowList = styled.div`
+  border-top: 1px solid #eee;
+`;
+
+const Row = styled.div<{ $bold?: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: ${({ $bold }) => ($bold ? "1px solid #eee" : "none")};
+`;
+
+const Label = styled.span`
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+const Amount = styled.span<{ $large?: boolean }>`
+  font-size: ${({ $large }) => ($large ? "18px" : "16px")};
+  font-weight: bold;
+`;
+
+export const OrderSummary = ({ totalOrderAmount }: { totalOrderAmount: number }) => {
   const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   return (
-    <div>
-      <div>총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.</div>
-      <div>주문 금액</div>
-      <div>{totalOrderAmount.toLocaleString()}원</div>
-      <div>배송비</div>
-      <div>{shippingFee.toLocaleString()}원</div>
-      <div>총 결제 금액</div>
-      <div>{totalPaymentAmount.toLocaleString()}원</div>
-    </div>
+    <Wrapper>
+      <InfoText>ⓘ 총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.</InfoText>
+      <RowList>
+        <Row>
+          <Label>주문 금액</Label>
+          <Amount>{totalOrderAmount.toLocaleString()}원</Amount>
+        </Row>
+        <Row>
+          <Label>배송비</Label>
+          <Amount>{shippingFee.toLocaleString()}원</Amount>
+        </Row>
+        <Row $bold>
+          <Label>총 결제 금액</Label>
+          <Amount $large>{totalPaymentAmount.toLocaleString()}원</Amount>
+        </Row>
+      </RowList>
+    </Wrapper>
   );
 };
