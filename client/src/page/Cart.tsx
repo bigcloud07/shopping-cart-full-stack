@@ -74,11 +74,15 @@ export const Cart = () => {
     productId,
     quantity,
   }: Pick<CartItem, "productId" | "quantity">) => {
-    await fetch(`/api/cart/${productId}`, {
+    const res = await fetch(`/api/cart/${productId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quantity: quantity - 1 }),
     });
+    if (res.status === 400) {
+      alert("수량은 1개 이상부터 가능합니다.");
+      return;
+    }
     fetchItems();
   };
 
