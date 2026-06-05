@@ -86,11 +86,17 @@ export const Cart = () => {
     initialFetch();
   }, []);
 
-  const selectedItems = cartItems.filter((item) => selectedIds.has(item.productId));
-  const totalOrderAmount = selectedItems.reduce(
-    (acc, item) => acc + item.productPrice * item.quantity, 0
+  const selectedItems = cartItems.filter((item) =>
+    selectedIds.has(item.productId),
   );
-  const totalQuantity = selectedItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalOrderAmount = selectedItems.reduce(
+    (acc, item) => acc + item.productPrice * item.quantity,
+    0,
+  );
+  const totalQuantity = selectedItems.reduce(
+    (acc, item) => acc + item.quantity,
+    0,
+  );
   const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
@@ -155,7 +161,9 @@ export const Cart = () => {
       <>
         <Header />
         <Title />
-        <CenterBox><Spinner /></CenterBox>
+        <CenterBox>
+          <Spinner />
+        </CenterBox>
       </>
     );
   }
@@ -172,7 +180,9 @@ export const Cart = () => {
 
   return (
     <>
-      <Header onBack={isConfirming ? () => setIsConfirming(false) : undefined} />
+      <Header
+        onBack={isConfirming ? () => setIsConfirming(false) : undefined}
+      />
       <Title />
       {isConfirming ? (
         <OrderConfirm
