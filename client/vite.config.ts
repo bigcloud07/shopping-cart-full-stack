@@ -6,10 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": {
+      "/cart": {
         target: process.env.API_TARGET ?? "http://localhost:3000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+      "/products": {
+        target: process.env.API_TARGET ?? "http://localhost:3000",
+        changeOrigin: true,
       },
     },
   },

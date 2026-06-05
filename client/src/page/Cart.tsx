@@ -7,6 +7,7 @@ import { OrderSummary } from "../components/OrderSummary";
 import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
 import type { CartItem, cartItemResponse } from "../type/type";
+import { API_URL } from "../config";
 
 const CenterBox = styled.div`
   display: flex;
@@ -53,7 +54,7 @@ export const Cart = () => {
   });
   const fetchItems = async () => {
     setIsLoading(true);
-    const response = await fetch("/api/cart");
+    const response = await fetch(`${API_URL}/cart`);
     const cartItemResponse: cartItemResponse = await response.json();
     const items = cartItemResponse.data.cartItems;
 
@@ -71,7 +72,7 @@ export const Cart = () => {
   useEffect(() => {
     const initialFetch = async () => {
       setIsLoading(true);
-      const response = await fetch("/api/cart");
+      const response = await fetch(`${API_URL}/cart`);
       const cartItemResponse: cartItemResponse = await response.json();
       const items = cartItemResponse.data.cartItems;
       setCartItems(items);
@@ -104,7 +105,7 @@ export const Cart = () => {
     productId,
     quantity,
   }: Pick<CartItem, "productId" | "quantity">) => {
-    await fetch(`/api/cart/${productId}`, {
+    await fetch(`${API_URL}/cart/${productId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quantity: quantity + 1 }),
@@ -116,7 +117,7 @@ export const Cart = () => {
     productId,
     quantity,
   }: Pick<CartItem, "productId" | "quantity">) => {
-    const res = await fetch(`/api/cart/${productId}`, {
+    const res = await fetch(`${API_URL}/cart/${productId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quantity: quantity - 1 }),
@@ -145,7 +146,7 @@ export const Cart = () => {
   };
 
   const onDelete = async ({ productId }: Pick<CartItem, "productId">) => {
-    await fetch(`/api/cart/${productId}`, {
+    await fetch(`${API_URL}/cart/${productId}`, {
       method: "DELETE",
     });
     setSelectedIds((prev) => {
