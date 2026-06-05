@@ -26,7 +26,7 @@ export const Item = ({
           onChange={() => onSelectItem({ productId: item.productId })}
         ></input>
         <button onClick={() => onDelete({ productId: item.productId })}>
-          delete
+          삭제
         </button>
       </div>
       <div>

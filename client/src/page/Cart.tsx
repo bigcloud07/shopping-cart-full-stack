@@ -2,21 +2,25 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
 import { OrderSummary } from "../components/OrderSummary";
+import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
 import type { CartItem, cartItemResponse } from "../type/type";
 
 export const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
     const saved = localStorage.getItem("selectedIds");
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const fetchItems = async () => {
+    setIsLoading(true);
     const response = await fetch("/api/cart");
     const cartItemResponse: cartItemResponse = await response.json();
     const items = cartItemResponse.data.cartItems;
 
     setCartItems(items);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -28,6 +32,7 @@ export const Cart = () => {
 
   useEffect(() => {
     const initialFetch = async () => {
+      setIsLoading(true);
       const response = await fetch("/api/cart");
       const cartItemResponse: cartItemResponse = await response.json();
       const items = cartItemResponse.data.cartItems;
@@ -37,6 +42,7 @@ export const Cart = () => {
       if (saved === null) {
         setSelectedIds(new Set(items.map((item) => item.productId)));
       }
+      setIsLoading(false);
     };
 
     initialFetch();
@@ -98,6 +104,16 @@ export const Cart = () => {
     });
     fetchItems();
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <Title />
+        <Spinner />
+      </>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
