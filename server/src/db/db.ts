@@ -73,7 +73,7 @@ DB.CART_TABLE.set(2, {
 });
 DB.CART_TABLE.set(2, {
   productData: {
-    name: "상품 B",
+    name: "상품 C",
     price: 25000,
     imgUrl: "https://picsum.photos/200/200?random=2",
   },
@@ -81,7 +81,7 @@ DB.CART_TABLE.set(2, {
 });
 DB.CART_TABLE.set(3, {
   productData: {
-    name: "상품 B",
+    name: "상품 D",
     price: 25000,
     imgUrl: "https://picsum.photos/200/200?random=3",
   },
@@ -89,7 +89,7 @@ DB.CART_TABLE.set(3, {
 });
 DB.CART_TABLE.set(4, {
   productData: {
-    name: "상품 B",
+    name: "상품 E",
     price: 25000,
     imgUrl: "https://picsum.photos/200/200?random=4",
   },
