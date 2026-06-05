@@ -88,7 +88,14 @@ interface ItemProps {
   onDelete: (productId: Pick<CartItem, "productId">) => void;
 }
 
-export const Item = ({ item, isSelected, onPlus, onMinus, onSelectItem, onDelete }: ItemProps) => {
+export const Item = ({
+  item,
+  isSelected,
+  onPlus,
+  onMinus,
+  onSelectItem,
+  onDelete,
+}: ItemProps) => {
   return (
     <ItemWrapper>
       <TopRow>
@@ -97,7 +104,9 @@ export const Item = ({ item, isSelected, onPlus, onMinus, onSelectItem, onDelete
           checked={isSelected}
           onChange={() => onSelectItem({ productId: item.productId })}
         />
-        <DeleteButton onClick={() => onDelete({ productId: item.productId })}>삭제</DeleteButton>
+        <DeleteButton onClick={() => onDelete({ productId: item.productId })}>
+          삭제
+        </DeleteButton>
       </TopRow>
       <ContentRow>
         <ProductImage src={item.productImg} alt="상품 사진" />
@@ -105,9 +114,21 @@ export const Item = ({ item, isSelected, onPlus, onMinus, onSelectItem, onDelete
           <ProductName>{item.productName}</ProductName>
           <ProductPrice>{item.productPrice.toLocaleString()}원</ProductPrice>
           <QuantityRow>
-            <QuantityButton onClick={() => onMinus({ productId: item.productId, quantity: item.quantity })}>−</QuantityButton>
+            <QuantityButton
+              onClick={() =>
+                onMinus({ productId: item.productId, quantity: item.quantity })
+              }
+            >
+              −
+            </QuantityButton>
             <QuantityDisplay>{item.quantity}</QuantityDisplay>
-            <QuantityButton onClick={() => onPlus({ productId: item.productId, quantity: item.quantity })}>+</QuantityButton>
+            <QuantityButton
+              onClick={() =>
+                onPlus({ productId: item.productId, quantity: item.quantity })
+              }
+            >
+              +
+            </QuantityButton>
           </QuantityRow>
         </ProductInfo>
       </ContentRow>

@@ -32,13 +32,19 @@ const Amount = styled.span<{ $large?: boolean }>`
   font-weight: bold;
 `;
 
-export const OrderSummary = ({ totalOrderAmount }: { totalOrderAmount: number }) => {
+export const OrderSummary = ({
+  totalOrderAmount,
+}: {
+  totalOrderAmount: number;
+}) => {
   const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   return (
     <Wrapper>
-      <InfoText>ⓘ 총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.</InfoText>
+      <InfoText>
+        ⓘ 총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.
+      </InfoText>
       <RowList>
         <Row>
           <Label>주문 금액</Label>

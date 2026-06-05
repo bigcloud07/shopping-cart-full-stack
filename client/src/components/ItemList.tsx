@@ -41,7 +41,15 @@ interface ItemListProps {
   onDelete: (productId: Pick<CartItem, "productId">) => void;
 }
 
-export const ItemList = ({ items, onPlus, onMinus, onSelectItem, onSelectAll, onDelete, selectedIds }: ItemListProps) => {
+export const ItemList = ({
+  items,
+  onPlus,
+  onMinus,
+  onSelectItem,
+  onSelectAll,
+  onDelete,
+  selectedIds,
+}: ItemListProps) => {
   return (
     <div>
       <Subtitle>현재 {items.length}종류의 상품이 담겨있습니다.</Subtitle>

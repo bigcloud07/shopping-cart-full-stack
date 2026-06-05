@@ -68,13 +68,18 @@ interface OrderConfirmProps {
   totalAmount: number;
 }
 
-export const OrderConfirm = ({ itemCount, totalQuantity, totalAmount }: OrderConfirmProps) => {
+export const OrderConfirm = ({
+  itemCount,
+  totalQuantity,
+  totalAmount,
+}: OrderConfirmProps) => {
   return (
     <>
       <Wrapper>
         <Title>주문 확인</Title>
         <Description>
-          총 {itemCount}종류의 상품 {totalQuantity}개를 주문합니다.<br />
+          총 {itemCount}종류의 상품 {totalQuantity}개를 주문합니다.
+          <br />
           최종 결제 금액을 확인해 주세요.
         </Description>
         <TotalSection>
