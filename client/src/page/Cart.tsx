@@ -48,10 +48,9 @@ export const Cart = () => {
     initialFetch();
   }, []);
 
-  const totalOrderAmount = cartItems.reduce(
-    (acc, item) => acc + item.productPrice * item.quantity,
-    0,
-  );
+  const totalOrderAmount = cartItems
+    .filter((item) => selectedIds.has(item.productId))
+    .reduce((acc, item) => acc + item.productPrice * item.quantity, 0);
 
   const onPlus = async ({
     productId,
