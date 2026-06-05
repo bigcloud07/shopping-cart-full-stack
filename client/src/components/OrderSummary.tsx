@@ -3,12 +3,8 @@ export const OrderSummary = ({
 }: {
   totalOrderAmount: number;
 }) => {
-  let shippingFee = 3000;
+  const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
   const totalPaymentAmount = totalOrderAmount + shippingFee;
-
-  if (totalPaymentAmount >= 100000) {
-    shippingFee = 0;
-  }
 
   return (
     <div>
