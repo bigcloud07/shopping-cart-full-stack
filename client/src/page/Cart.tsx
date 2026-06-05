@@ -34,7 +34,7 @@ export const Cart = () => {
       setCartItems(items);
 
       const saved = localStorage.getItem("selectedIds");
-      if (!saved) {
+      if (saved === null) {
         setSelectedIds(new Set(items.map((item) => item.productId)));
       }
     };
