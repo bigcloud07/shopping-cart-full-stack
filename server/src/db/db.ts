@@ -46,3 +46,52 @@ export const DB: DBInterface = {
   PRODUCT_TABLE: new ProductDB(),
   CART_TABLE: new Map<number, CartItem>(),
 };
+
+DB.PRODUCT_TABLE.insert({ name: "상품 A", price: 10000 });
+DB.PRODUCT_TABLE.insert({
+  name: "상품 B",
+  price: 25000,
+  imgUrl: "https://example.com/b.jpg",
+});
+
+DB.CART_TABLE.set(1, {
+  productData: {
+    name: "상품 A",
+    price: 10000,
+    imgUrl: "https://picsum.photos/200/200?random=1",
+  },
+  quantity: 2,
+});
+
+DB.CART_TABLE.set(2, {
+  productData: {
+    name: "상품 B",
+    price: 25000,
+    imgUrl: "https://picsum.photos/200/200?random=2",
+  },
+  quantity: 1,
+});
+DB.CART_TABLE.set(2, {
+  productData: {
+    name: "상품 B",
+    price: 25000,
+    imgUrl: "https://picsum.photos/200/200?random=2",
+  },
+  quantity: 1,
+});
+DB.CART_TABLE.set(3, {
+  productData: {
+    name: "상품 B",
+    price: 25000,
+    imgUrl: "https://picsum.photos/200/200?random=3",
+  },
+  quantity: 1,
+});
+DB.CART_TABLE.set(4, {
+  productData: {
+    name: "상품 B",
+    price: 25000,
+    imgUrl: "https://picsum.photos/200/200?random=4",
+  },
+  quantity: 1,
+});
