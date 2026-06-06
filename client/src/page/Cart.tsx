@@ -105,6 +105,10 @@ export const Cart = () => {
     productId,
     quantity,
   }: Pick<CartItem, "productId" | "quantity">) => {
+    if (quantity >= 99) {
+      alert("수량은 최대 99개까지 가능합니다.");
+      return;
+    }
     await fetch(`${API_URL}/cart/${productId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
