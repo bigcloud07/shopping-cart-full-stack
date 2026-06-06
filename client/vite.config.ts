@@ -6,8 +6,16 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        url: "http://localhost:3000",
+      },
+    },
     setupFiles: ["./src/setupTests.ts"],
     globals: true,
+    env: {
+      VITE_API_URL: "",
+    },
   },
   server: {
     proxy: {
