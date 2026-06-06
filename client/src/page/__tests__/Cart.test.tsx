@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Cart } from "../Cart";
+import type { CartItem } from "../../type/type";
 
-const mockCartResponse = (items = []) => ({
+const mockCartResponse = (items: CartItem[] = []) => ({
   result: "success",
   data: { cartItems: items },
 });
