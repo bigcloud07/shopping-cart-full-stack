@@ -35,6 +35,31 @@ describe("Cart 통합 테스트", () => {
     });
   });
 
+  test("처음 방문하면 전체 상품이 선택된 상태로 표시된다", async () => {
+    server.use(
+      http.get("/cart", () =>
+        HttpResponse.json(
+          makeCartResponse([
+            { productId: 1, productName: "상품 A", productImg: "", productPrice: 10000, quantity: 2 },
+            { productId: 2, productName: "상품 B", productImg: "", productPrice: 25000, quantity: 1 },
+          ]),
+        ),
+      ),
+    );
+
+    render(<Cart />);
+
+    await waitFor(() => {
+      expect(screen.getByText("상품 A")).toBeInTheDocument();
+      expect(screen.getByText("상품 B")).toBeInTheDocument();
+    });
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    checkboxes.forEach((checkbox) => {
+      expect(checkbox).toBeChecked();
+    });
+  });
+
   test("+ 버튼 클릭 시 수량이 증가한다", async () => {
     let fetchCount = 0;
     server.use(
