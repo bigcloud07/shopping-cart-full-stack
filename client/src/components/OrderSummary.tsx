@@ -37,7 +37,12 @@ export const OrderSummary = ({
 }: {
   totalOrderAmount: number;
 }) => {
-  const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
+  let shippingFee = 3000;
+
+  if (totalOrderAmount === 0 || totalOrderAmount >= 100000) {
+    shippingFee = 0;
+  }
+
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   return (

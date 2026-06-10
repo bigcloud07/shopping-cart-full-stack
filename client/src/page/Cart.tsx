@@ -98,7 +98,8 @@ export const Cart = () => {
     (acc, item) => acc + item.quantity,
     0,
   );
-  const shippingFee = totalOrderAmount >= 100000 ? 0 : 3000;
+  const shippingFee =
+    totalOrderAmount === 0 || totalOrderAmount >= 100000 ? 0 : 3000;
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   const onPlus = async ({
