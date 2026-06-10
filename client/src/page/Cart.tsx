@@ -210,8 +210,8 @@ export const Cart = () => {
           <Spacer />
           <BottomBar>
             <OrderButton
-              $disabled={selectedIds.size === 0}
-              disabled={selectedIds.size === 0}
+              $disabled={selectedItems.length === 0}
+              disabled={selectedItems.length === 0}
               onClick={() => setIsConfirming(true)}
             >
               주문 확인
