@@ -19,7 +19,7 @@ const requestCartItems = async (): Promise<CartItem[]> => {
 };
 
 const toError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error("Failed to fetch cart items");
+  err instanceof Error ? err : new Error("장바구니 정보를 불러오지 못했습니다.");
 
 export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
