@@ -9,7 +9,7 @@ import { Title } from "../components/Title";
 import type { CartItem } from "../type/type";
 import { useCart } from "../hooks/useCart";
 import { useSelectedIds } from "../hooks/useSelectedIds";
-import { calculateShippingFee } from "../utils/shippingFee";
+import { useOrderCalculation } from "../hooks/useOrderCalculation";
 
 const CenterBox = styled.div`
   display: flex;
@@ -59,19 +59,12 @@ export const Cart = () => {
   const { selectedIds, onSelectAll, onSelectItem, removeSelectedId } =
     useSelectedIds(cartItems);
 
-  const selectedItems = cartItems.filter((item) =>
-    selectedIds.has(item.productId),
-  );
-  const totalOrderAmount = selectedItems.reduce(
-    (acc, item) => acc + item.productPrice * item.quantity,
-    0,
-  );
-  const totalQuantity = selectedItems.reduce(
-    (acc, item) => acc + item.quantity,
-    0,
-  );
-  const shippingFee = calculateShippingFee(totalOrderAmount);
-  const totalPaymentAmount = totalOrderAmount + shippingFee;
+  const {
+    selectedItems,
+    totalOrderAmount,
+    totalQuantity,
+    totalPaymentAmount,
+  } = useOrderCalculation(cartItems, selectedIds);
 
   const onPlus = async ({
     productId,
