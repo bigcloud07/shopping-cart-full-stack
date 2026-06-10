@@ -26,6 +26,7 @@ describe("Cart 컴포넌트 - 수량 경계값", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve(mockCartResponse([cartItem])),
       }),
     );
@@ -54,9 +55,10 @@ describe("Cart 컴포넌트 - 수량 경계값", () => {
       "fetch",
       vi.fn()
         .mockResolvedValueOnce({
+          ok: true,
           json: () => Promise.resolve(mockCartResponse([cartItem])),
         })
-        .mockResolvedValueOnce({ status: 400 }),
+        .mockResolvedValueOnce({ ok: false, status: 400 }),
     );
     const alertMock = vi.spyOn(window, "alert").mockImplementation(() => {});
 
