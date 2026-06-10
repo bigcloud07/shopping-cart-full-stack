@@ -62,6 +62,7 @@ export const Cart = () => {
     selectedItems,
     totalOrderAmount,
     totalQuantity,
+    shippingFee,
     totalPaymentAmount,
   } = useOrderCalculation(cartItems, selectedIds);
 
@@ -146,7 +147,11 @@ export const Cart = () => {
             onSelectItem={onSelectItem}
             onDelete={onDelete}
           />
-          <OrderSummary totalOrderAmount={totalOrderAmount} />
+          <OrderSummary
+            totalOrderAmount={totalOrderAmount}
+            shippingFee={shippingFee}
+            totalPaymentAmount={totalPaymentAmount}
+          />
           <Spacer />
           <BottomBar>
             <OrderButton

@@ -1,8 +1,5 @@
 import styled from "styled-components";
-import {
-  FREE_SHIPPING_THRESHOLD,
-  calculateShippingFee,
-} from "../utils/shippingFee";
+import { FREE_SHIPPING_THRESHOLD } from "../utils/shippingFee";
 
 const Wrapper = styled.div`
   border-top: 1px solid #eee;
@@ -38,12 +35,15 @@ const Amount = styled.span<{ $large?: boolean }>`
 
 interface OrderSummaryProps {
   totalOrderAmount: number;
+  shippingFee: number;
+  totalPaymentAmount: number;
 }
 
-export const OrderSummary = ({ totalOrderAmount }: OrderSummaryProps) => {
-  const shippingFee = calculateShippingFee(totalOrderAmount);
-  const totalPaymentAmount = totalOrderAmount + shippingFee;
-
+export const OrderSummary = ({
+  totalOrderAmount,
+  shippingFee,
+  totalPaymentAmount,
+}: OrderSummaryProps) => {
   return (
     <Wrapper>
       <InfoText>
