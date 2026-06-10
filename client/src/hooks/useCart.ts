@@ -5,6 +5,7 @@ import { API_URL } from "../config";
 interface UseCartReturn {
   cartItems: CartItem[];
   isLoading: boolean;
+  isMutating: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
   increaseQuantity: (productId: number, quantity: number) => Promise<void>;
@@ -14,6 +15,9 @@ interface UseCartReturn {
 
 const requestCartItems = async (): Promise<CartItem[]> => {
   const response = await fetch(`${API_URL}/cart`);
+  if (!response.ok) {
+    throw new Error("장바구니 정보를 불러오지 못했습니다.");
+  }
   const cartItemResponse: cartItemResponse = await response.json();
   return cartItemResponse.data.cartItems;
 };
@@ -24,17 +28,15 @@ const toError = (err: unknown): Error =>
 export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const refetch = async () => {
-    setIsLoading(true);
     try {
       setCartItems(await requestCartItems());
       setError(null);
     } catch (err) {
       setError(toError(err));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -54,37 +56,72 @@ export const useCart = (): UseCartReturn => {
   }, []);
 
   const increaseQuantity = async (productId: number, quantity: number) => {
-    await fetch(`${API_URL}/cart/${productId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: quantity + 1 }),
-    });
-    await refetch();
+    if (isMutating) return;
+    setIsMutating(true);
+    try {
+      const res = await fetch(`${API_URL}/cart/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: quantity + 1 }),
+      });
+      if (!res.ok) {
+        throw new Error("수량 변경에 실패했습니다.");
+      }
+      await refetch();
+    } catch (err) {
+      setError(toError(err));
+    } finally {
+      setIsMutating(false);
+    }
   };
 
   const decreaseQuantity = async (productId: number, quantity: number) => {
-    const res = await fetch(`${API_URL}/cart/${productId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: quantity - 1 }),
-    });
-    if (res.status === 400) {
-      return false;
+    if (isMutating) return true;
+    setIsMutating(true);
+    try {
+      const res = await fetch(`${API_URL}/cart/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: quantity - 1 }),
+      });
+      if (res.status === 400) {
+        return false;
+      }
+      if (!res.ok) {
+        throw new Error("수량 변경에 실패했습니다.");
+      }
+      await refetch();
+      return true;
+    } catch (err) {
+      setError(toError(err));
+      return true;
+    } finally {
+      setIsMutating(false);
     }
-    await refetch();
-    return true;
   };
 
   const removeItem = async (productId: number) => {
-    await fetch(`${API_URL}/cart/${productId}`, {
-      method: "DELETE",
-    });
-    await refetch();
+    if (isMutating) return;
+    setIsMutating(true);
+    try {
+      const res = await fetch(`${API_URL}/cart/${productId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("상품 삭제에 실패했습니다.");
+      }
+      await refetch();
+    } catch (err) {
+      setError(toError(err));
+    } finally {
+      setIsMutating(false);
+    }
   };
 
   return {
     cartItems,
     isLoading,
+    isMutating,
     error,
     refetch,
     increaseQuantity,
