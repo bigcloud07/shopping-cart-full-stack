@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import styled from "styled-components";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
@@ -8,6 +8,8 @@ import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
 import type { CartItem } from "../type/type";
 import { useCart } from "../hooks/useCart";
+import { useSelectedIds } from "../hooks/useSelectedIds";
+import { calculateShippingFee } from "../utils/shippingFee";
 
 const CenterBox = styled.div`
   display: flex;
@@ -54,33 +56,8 @@ export const Cart = () => {
     removeItem,
   } = useCart();
   const [isConfirming, setIsConfirming] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
-    const saved = localStorage.getItem("selectedIds");
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
-  const hadSavedSelectionRef = useRef(
-    localStorage.getItem("selectedIds") !== null,
-  );
-  const isSelectionInitializedRef = useRef(false);
-
-  useEffect(() => {
-    if (isSelectionInitializedRef.current || cartItems.length === 0) {
-      return;
-    }
-    isSelectionInitializedRef.current = true;
-
-    if (!hadSavedSelectionRef.current) {
-      setSelectedIds(new Set(cartItems.map((item) => item.productId)));
-    }
-  }, [cartItems]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "selectedIds",
-      JSON.stringify(Array.from(selectedIds)),
-    );
-  }, [selectedIds]);
+  const { selectedIds, onSelectAll, onSelectItem, removeSelectedId } =
+    useSelectedIds(cartItems);
 
   const selectedItems = cartItems.filter((item) =>
     selectedIds.has(item.productId),
@@ -93,8 +70,7 @@ export const Cart = () => {
     (acc, item) => acc + item.quantity,
     0,
   );
-  const shippingFee =
-    totalOrderAmount === 0 || totalOrderAmount >= 100000 ? 0 : 3000;
+  const shippingFee = calculateShippingFee(totalOrderAmount);
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   const onPlus = async ({
@@ -118,29 +94,9 @@ export const Cart = () => {
     }
   };
 
-  const onSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedIds(new Set(cartItems.map((item) => item.productId)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  };
-
-  const onSelectItem = ({ productId }: Pick<CartItem, "productId">) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(productId) ? next.delete(productId) : next.add(productId);
-      return next;
-    });
-  };
-
   const onDelete = async ({ productId }: Pick<CartItem, "productId">) => {
     await removeItem(productId);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(productId);
-      return next;
-    });
+    removeSelectedId(productId);
   };
 
   if (isLoading) {
