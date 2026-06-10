@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import type { CartItem } from "../type/type";
 import { Item } from "./Item";
+import { CartItemActionsContext } from "../context/CartItemActionsContext";
 
 const Subtitle = styled.p`
   padding: 0 20px 16px;
@@ -61,19 +62,19 @@ export const ItemList = ({
         />
         <SelectAllLabel>전체선택</SelectAllLabel>
       </SelectAllRow>
-      <List>
-        {items.map((item) => (
-          <Item
-            key={item.productId}
-            item={item}
-            isSelected={selectedIds.has(item.productId)}
-            onPlus={onPlus}
-            onMinus={onMinus}
-            onSelectItem={onSelectItem}
-            onDelete={onDelete}
-          />
-        ))}
-      </List>
+      <CartItemActionsContext.Provider
+        value={{ onPlus, onMinus, onSelectItem, onDelete }}
+      >
+        <List>
+          {items.map((item) => (
+            <Item
+              key={item.productId}
+              item={item}
+              isSelected={selectedIds.has(item.productId)}
+            />
+          ))}
+        </List>
+      </CartItemActionsContext.Provider>
     </div>
   );
 };

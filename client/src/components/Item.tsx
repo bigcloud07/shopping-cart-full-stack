@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import type { CartItem } from "../type/type";
+import { useCartItemActions } from "../context/CartItemActionsContext";
 
 const ItemWrapper = styled.li`
   padding: 16px 20px;
@@ -81,21 +82,11 @@ const QuantityDisplay = styled.span`
 
 interface ItemProps {
   item: CartItem;
-  onPlus: (productId: number) => Promise<void>;
-  onMinus: (productId: number) => Promise<void>;
   isSelected: boolean;
-  onSelectItem: (productId: number) => void;
-  onDelete: (productId: number) => void;
 }
 
-export const Item = ({
-  item,
-  isSelected,
-  onPlus,
-  onMinus,
-  onSelectItem,
-  onDelete,
-}: ItemProps) => {
+export const Item = ({ item, isSelected }: ItemProps) => {
+  const { onPlus, onMinus, onSelectItem, onDelete } = useCartItemActions();
   return (
     <ItemWrapper>
       <TopRow>
