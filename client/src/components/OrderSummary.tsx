@@ -32,11 +32,11 @@ const Amount = styled.span<{ $large?: boolean }>`
   font-weight: bold;
 `;
 
-export const OrderSummary = ({
-  totalOrderAmount,
-}: {
+interface OrderSummaryProps {
   totalOrderAmount: number;
-}) => {
+}
+
+export const OrderSummary = ({ totalOrderAmount }: OrderSummaryProps) => {
   let shippingFee = 3000;
 
   if (totalOrderAmount === 0 || totalOrderAmount >= 100000) {
