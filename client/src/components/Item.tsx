@@ -81,11 +81,11 @@ const QuantityDisplay = styled.span`
 
 interface ItemProps {
   item: CartItem;
-  onPlus: (item: Pick<CartItem, "productId">) => Promise<void>;
-  onMinus: (item: Pick<CartItem, "productId">) => Promise<void>;
+  onPlus: (productId: number) => Promise<void>;
+  onMinus: (productId: number) => Promise<void>;
   isSelected: boolean;
-  onSelectItem: (productId: Pick<CartItem, "productId">) => void;
-  onDelete: (productId: Pick<CartItem, "productId">) => void;
+  onSelectItem: (productId: number) => void;
+  onDelete: (productId: number) => void;
 }
 
 export const Item = ({
@@ -102,9 +102,9 @@ export const Item = ({
         <Checkbox
           type="checkbox"
           checked={isSelected}
-          onChange={() => onSelectItem({ productId: item.productId })}
+          onChange={() => onSelectItem(item.productId)}
         />
-        <DeleteButton onClick={() => onDelete({ productId: item.productId })}>
+        <DeleteButton onClick={() => onDelete(item.productId)}>
           삭제
         </DeleteButton>
       </TopRow>
@@ -114,15 +114,11 @@ export const Item = ({
           <ProductName>{item.productName}</ProductName>
           <ProductPrice>{item.productPrice.toLocaleString()}원</ProductPrice>
           <QuantityRow>
-            <QuantityButton
-              onClick={() => onMinus({ productId: item.productId })}
-            >
+            <QuantityButton onClick={() => onMinus(item.productId)}>
               −
             </QuantityButton>
             <QuantityDisplay>{item.quantity}</QuantityDisplay>
-            <QuantityButton
-              onClick={() => onPlus({ productId: item.productId })}
-            >
+            <QuantityButton onClick={() => onPlus(item.productId)}>
               +
             </QuantityButton>
           </QuantityRow>

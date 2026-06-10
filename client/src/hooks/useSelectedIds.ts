@@ -11,7 +11,7 @@ const loadSelectedIds = (): Set<number> | null => {
 interface UseSelectedIdsReturn {
   selectedIds: Set<number>;
   onSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelectItem: (item: Pick<CartItem, "productId">) => void;
+  onSelectItem: (productId: number) => void;
   removeSelectedId: (productId: number) => void;
 }
 
@@ -46,7 +46,7 @@ export const useSelectedIds = (cartItems: CartItem[]): UseSelectedIdsReturn => {
     }
   };
 
-  const onSelectItem = ({ productId }: Pick<CartItem, "productId">) => {
+  const onSelectItem = (productId: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(productId)) {

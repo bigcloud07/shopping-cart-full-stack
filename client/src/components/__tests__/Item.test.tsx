@@ -38,9 +38,7 @@ describe("Item 컴포넌트", () => {
 
     await userEvent.click(screen.getByText("+"));
 
-    expect(mockProps.onPlus).toHaveBeenCalledWith({
-      productId: 1,
-    });
+    expect(mockProps.onPlus).toHaveBeenCalledWith(1);
   });
 
   test("− 버튼 클릭 시 onMinus가 호출된다", async () => {
@@ -48,9 +46,7 @@ describe("Item 컴포넌트", () => {
 
     await userEvent.click(screen.getByText("−"));
 
-    expect(mockProps.onMinus).toHaveBeenCalledWith({
-      productId: 1,
-    });
+    expect(mockProps.onMinus).toHaveBeenCalledWith(1);
   });
 
   test("삭제 버튼 클릭 시 onDelete가 호출된다", async () => {
@@ -58,7 +54,7 @@ describe("Item 컴포넌트", () => {
 
     await userEvent.click(screen.getByText("삭제"));
 
-    expect(mockProps.onDelete).toHaveBeenCalledWith({ productId: 1 });
+    expect(mockProps.onDelete).toHaveBeenCalledWith(1);
   });
 
   test("체크박스 클릭 시 onSelectItem이 호출된다", async () => {
@@ -66,7 +62,7 @@ describe("Item 컴포넌트", () => {
 
     await userEvent.click(screen.getByRole("checkbox"));
 
-    expect(mockProps.onSelectItem).toHaveBeenCalledWith({ productId: 1 });
+    expect(mockProps.onSelectItem).toHaveBeenCalledWith(1);
   });
 
   test("isSelected가 true이면 체크박스가 체크된 상태이다", () => {

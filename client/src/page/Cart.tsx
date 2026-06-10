@@ -6,7 +6,6 @@ import { OrderConfirm } from "../components/OrderConfirm";
 import { OrderSummary } from "../components/OrderSummary";
 import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
-import type { CartItem } from "../type/type";
 import { useCart } from "../hooks/useCart";
 import { useSelectedIds } from "../hooks/useSelectedIds";
 import { useOrderCalculation } from "../hooks/useOrderCalculation";
@@ -66,7 +65,7 @@ export const Cart = () => {
     totalPaymentAmount,
   } = useOrderCalculation(cartItems, selectedIds);
 
-  const onPlus = async ({ productId }: Pick<CartItem, "productId">) => {
+  const onPlus = async (productId: number) => {
     const item = cartItems.find((item) => item.productId === productId);
     if (!item) return;
 
@@ -77,7 +76,7 @@ export const Cart = () => {
     await increaseQuantity(productId, item.quantity);
   };
 
-  const onMinus = async ({ productId }: Pick<CartItem, "productId">) => {
+  const onMinus = async (productId: number) => {
     const item = cartItems.find((item) => item.productId === productId);
     if (!item) return;
 
@@ -87,7 +86,7 @@ export const Cart = () => {
     }
   };
 
-  const onDelete = async ({ productId }: Pick<CartItem, "productId">) => {
+  const onDelete = async (productId: number) => {
     await removeItem(productId);
     removeSelectedId(productId);
   };
