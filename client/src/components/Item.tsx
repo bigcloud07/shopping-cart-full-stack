@@ -109,7 +109,7 @@ export const Item = ({
         </DeleteButton>
       </TopRow>
       <ContentRow>
-        <ProductImage src={item.productImg} alt="상품 사진" />
+        <ProductImage src={item.productImg} alt={item.productName} />
         <ProductInfo>
           <ProductName>{item.productName}</ProductName>
           <ProductPrice>{item.productPrice.toLocaleString()}원</ProductPrice>
