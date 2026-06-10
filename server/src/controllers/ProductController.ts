@@ -70,7 +70,9 @@ export default class ProductController {
     try {
       const { name, price, imgUrl } = req.body;
       if (name === undefined || price === undefined) {
-        return res.status(400).json({ result: "error", message: "형식이 비었습니다" });
+        return res
+          .status(400)
+          .json({ result: "error", message: "형식이 비었습니다" });
       }
       const product = new Product({ name, price, imgUrl });
       this.#db.PRODUCT_TABLE.insert(product.getProduct());
