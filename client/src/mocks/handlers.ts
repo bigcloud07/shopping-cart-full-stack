@@ -1,10 +1,16 @@
 import { http, HttpResponse } from "msw";
 import type { CartItem } from "../type/type";
 
-export const cartItems: CartItem[] = [
+const INITIAL_CART_ITEMS: CartItem[] = [
   { productId: 1, productName: "상품 A", productImg: "https://picsum.photos/200/200?random=1", productPrice: 10000, quantity: 2 },
   { productId: 2, productName: "상품 B", productImg: "https://picsum.photos/200/200?random=2", productPrice: 25000, quantity: 1 },
 ];
+
+export let cartItems: CartItem[] = structuredClone(INITIAL_CART_ITEMS);
+
+export const resetCartItems = () => {
+  cartItems = structuredClone(INITIAL_CART_ITEMS);
+};
 
 export const handlers = [
   http.get("/cart", () => {
