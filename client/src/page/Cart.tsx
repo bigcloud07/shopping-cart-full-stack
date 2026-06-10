@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
@@ -6,8 +6,8 @@ import { OrderConfirm } from "../components/OrderConfirm";
 import { OrderSummary } from "../components/OrderSummary";
 import { Spinner } from "../components/Spinner";
 import { Title } from "../components/Title";
-import type { CartItem, cartItemResponse } from "../type/type";
-import { API_URL } from "../config";
+import type { CartItem } from "../type/type";
+import { useCart } from "../hooks/useCart";
 
 const CenterBox = styled.div`
   display: flex;
@@ -45,40 +45,35 @@ const OrderButton = styled.button<{ $disabled: boolean }>`
 `;
 
 export const Cart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    cartItems,
+    isLoading,
+    error,
+    increaseQuantity,
+    decreaseQuantity,
+    removeItem,
+  } = useCart();
   const [isConfirming, setIsConfirming] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => {
     const saved = localStorage.getItem("selectedIds");
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
-  const fetchItems = async () => {
-    setIsLoading(true);
-    const response = await fetch(`${API_URL}/cart`);
-    const cartItemResponse: cartItemResponse = await response.json();
-    const items = cartItemResponse.data.cartItems;
 
-    setCartItems(items);
-    setIsLoading(false);
-  };
+  const hadSavedSelectionRef = useRef(
+    localStorage.getItem("selectedIds") !== null,
+  );
+  const isSelectionInitializedRef = useRef(false);
 
   useEffect(() => {
-    const initialFetch = async () => {
-      setIsLoading(true);
-      const saved = localStorage.getItem("selectedIds");
+    if (isSelectionInitializedRef.current || cartItems.length === 0) {
+      return;
+    }
+    isSelectionInitializedRef.current = true;
 
-      const response = await fetch(`${API_URL}/cart`);
-      const cartItemResponse: cartItemResponse = await response.json();
-      const items = cartItemResponse.data.cartItems;
-      setCartItems(items);
-
-      if (saved === null) {
-        setSelectedIds(new Set(items.map((item) => item.productId)));
-      }
-      setIsLoading(false);
-    };
-    initialFetch();
-  }, []);
+    if (!hadSavedSelectionRef.current) {
+      setSelectedIds(new Set(cartItems.map((item) => item.productId)));
+    }
+  }, [cartItems]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -110,28 +105,17 @@ export const Cart = () => {
       alert("수량은 최대 99개까지 가능합니다.");
       return;
     }
-    await fetch(`${API_URL}/cart/${productId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: quantity + 1 }),
-    });
-    fetchItems();
+    await increaseQuantity(productId, quantity);
   };
 
   const onMinus = async ({
     productId,
     quantity,
   }: Pick<CartItem, "productId" | "quantity">) => {
-    const res = await fetch(`${API_URL}/cart/${productId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: quantity - 1 }),
-    });
-    if (res.status === 400) {
+    const success = await decreaseQuantity(productId, quantity);
+    if (!success) {
       alert("수량은 1개 이상부터 가능합니다.");
-      return;
     }
-    fetchItems();
   };
 
   const onSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,15 +135,12 @@ export const Cart = () => {
   };
 
   const onDelete = async ({ productId }: Pick<CartItem, "productId">) => {
-    await fetch(`${API_URL}/cart/${productId}`, {
-      method: "DELETE",
-    });
+    await removeItem(productId);
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(productId);
       return next;
     });
-    fetchItems();
   };
 
   if (isLoading) {
@@ -170,6 +151,16 @@ export const Cart = () => {
         <CenterBox>
           <Spinner />
         </CenterBox>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Header />
+        <Title />
+        <CenterBox>장바구니를 불러오지 못했습니다.</CenterBox>
       </>
     );
   }
