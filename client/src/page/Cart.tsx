@@ -63,29 +63,29 @@ export const Cart = () => {
   };
 
   useEffect(() => {
-    localStorage.setItem(
-      "selectedIds",
-      JSON.stringify(Array.from(selectedIds)),
-    );
-  }, [selectedIds]);
-
-  useEffect(() => {
     const initialFetch = async () => {
       setIsLoading(true);
+      const saved = localStorage.getItem("selectedIds");
+
       const response = await fetch(`${API_URL}/cart`);
       const cartItemResponse: cartItemResponse = await response.json();
       const items = cartItemResponse.data.cartItems;
       setCartItems(items);
 
-      const saved = localStorage.getItem("selectedIds");
       if (saved === null) {
         setSelectedIds(new Set(items.map((item) => item.productId)));
       }
       setIsLoading(false);
     };
-
     initialFetch();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "selectedIds",
+      JSON.stringify(Array.from(selectedIds)),
+    );
+  }, [selectedIds]);
 
   const selectedItems = cartItems.filter((item) =>
     selectedIds.has(item.productId),
