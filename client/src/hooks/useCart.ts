@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CartItem, cartItemResponse } from "../type/type";
+import type { CartItem, CartItemResponse } from "../type/type";
 import { API_URL } from "../config";
 
 interface UseCartReturn {
@@ -18,12 +18,14 @@ const requestCartItems = async (): Promise<CartItem[]> => {
   if (!response.ok) {
     throw new Error("장바구니 정보를 불러오지 못했습니다.");
   }
-  const cartItemResponse: cartItemResponse = await response.json();
+  const cartItemResponse: CartItemResponse = await response.json();
   return cartItemResponse.data.cartItems;
 };
 
 const toError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error("장바구니 정보를 불러오지 못했습니다.");
+  err instanceof Error
+    ? err
+    : new Error("장바구니 정보를 불러오지 못했습니다.");
 
 export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);

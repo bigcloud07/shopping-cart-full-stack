@@ -6,7 +6,7 @@ export interface CartItem {
   quantity: number;
 }
 
-export interface cartItemResponse {
+export interface CartItemResponse {
   result: string;
   data: {
     cartItems: CartItem[];
