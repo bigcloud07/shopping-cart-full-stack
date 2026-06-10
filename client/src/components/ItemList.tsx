@@ -33,8 +33,8 @@ const List = styled.ul`
 
 interface ItemListProps {
   items: Array<CartItem>;
-  onPlus: (item: Pick<CartItem, "productId" | "quantity">) => Promise<void>;
-  onMinus: (item: Pick<CartItem, "productId" | "quantity">) => Promise<void>;
+  onPlus: (item: Pick<CartItem, "productId">) => Promise<void>;
+  onMinus: (item: Pick<CartItem, "productId">) => Promise<void>;
   selectedIds: Set<number>;
   onSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectItem: (productId: Pick<CartItem, "productId">) => void;

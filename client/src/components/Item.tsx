@@ -81,8 +81,8 @@ const QuantityDisplay = styled.span`
 
 interface ItemProps {
   item: CartItem;
-  onPlus: (item: Pick<CartItem, "productId" | "quantity">) => Promise<void>;
-  onMinus: (item: Pick<CartItem, "productId" | "quantity">) => Promise<void>;
+  onPlus: (item: Pick<CartItem, "productId">) => Promise<void>;
+  onMinus: (item: Pick<CartItem, "productId">) => Promise<void>;
   isSelected: boolean;
   onSelectItem: (productId: Pick<CartItem, "productId">) => void;
   onDelete: (productId: Pick<CartItem, "productId">) => void;
@@ -115,17 +115,13 @@ export const Item = ({
           <ProductPrice>{item.productPrice.toLocaleString()}원</ProductPrice>
           <QuantityRow>
             <QuantityButton
-              onClick={() =>
-                onMinus({ productId: item.productId, quantity: item.quantity })
-              }
+              onClick={() => onMinus({ productId: item.productId })}
             >
               −
             </QuantityButton>
             <QuantityDisplay>{item.quantity}</QuantityDisplay>
             <QuantityButton
-              onClick={() =>
-                onPlus({ productId: item.productId, quantity: item.quantity })
-              }
+              onClick={() => onPlus({ productId: item.productId })}
             >
               +
             </QuantityButton>

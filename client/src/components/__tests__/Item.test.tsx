@@ -40,7 +40,6 @@ describe("Item 컴포넌트", () => {
 
     expect(mockProps.onPlus).toHaveBeenCalledWith({
       productId: 1,
-      quantity: 2,
     });
   });
 
@@ -51,7 +50,6 @@ describe("Item 컴포넌트", () => {
 
     expect(mockProps.onMinus).toHaveBeenCalledWith({
       productId: 1,
-      quantity: 2,
     });
   });
 
