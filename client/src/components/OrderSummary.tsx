@@ -1,4 +1,8 @@
 import styled from "styled-components";
+import {
+  FREE_SHIPPING_THRESHOLD,
+  calculateShippingFee,
+} from "../utils/shippingFee";
 
 const Wrapper = styled.div`
   border-top: 1px solid #eee;
@@ -37,18 +41,14 @@ interface OrderSummaryProps {
 }
 
 export const OrderSummary = ({ totalOrderAmount }: OrderSummaryProps) => {
-  let shippingFee = 3000;
-
-  if (totalOrderAmount === 0 || totalOrderAmount >= 100000) {
-    shippingFee = 0;
-  }
-
+  const shippingFee = calculateShippingFee(totalOrderAmount);
   const totalPaymentAmount = totalOrderAmount + shippingFee;
 
   return (
     <Wrapper>
       <InfoText>
-        ⓘ 총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.
+        ⓘ 총 주문 금액이 {FREE_SHIPPING_THRESHOLD.toLocaleString()}원 이상일
+        경우, 무료 배송됩니다.
       </InfoText>
       <RowList>
         <Row>
