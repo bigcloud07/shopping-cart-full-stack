@@ -385,7 +385,7 @@ Request Body
 
 ```js
 {
-  cartItemIds: [1, 2],
+  productIds: [1, 2],
   couponIds: [1, 4],
   isRemoteArea: false,
 }
