@@ -420,7 +420,7 @@ Success
 
 </details>
 
-### `PATCH` `/order` - 제주도 및 도서 산간 지역 체크사항을 업데이트한다.
+### `PATCH` `/order/destination` - 제주도 및 도서 산간 지역 체크사항을 업데이트한다.
 
 <details>
 <summary>상세 보기</summary>
@@ -437,12 +437,15 @@ Success
 
 ```js
 // Response Status: 200
-// 도서 산간 지역 상태가 성공적으로 업데이트되었기 때문
+// 도서 산간 지역 상태가 갱신되어, 배송비와 총 결제 금액이 재계산되었을 때
 
 {
   result: "success",
   data: {
-    isRemoteArea: true,
+    totalOrderAmount: 70000,
+    couponDiscountAmount: 6000,
+    shippingFee: 6000,
+    totalPaymentAmount: 70000,
   },
 };
 ```
