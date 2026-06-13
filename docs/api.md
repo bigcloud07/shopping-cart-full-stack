@@ -385,16 +385,14 @@ Request Body
 
 ```js
 {
-  productIds: [1, 2],
   couponIds: [1, 4],
-  isRemoteArea: false,
 }
 ```
 
 Success
 
 ```js
-// Response Status: 201
+// Response Status: 200
 // 주문, 쿠폰 할인, 배송비, 총 결제 금액 계산 결과를 성공적으로 불러왔을 때
 
 {
