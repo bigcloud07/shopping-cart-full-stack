@@ -376,7 +376,7 @@ Success
 
 </details>
 
-### `POST` `/order/apply` - 주문서에서 쿠폰이 적용된 결제 금액을 계산한다.
+### `PATCH` `/order/coupon` - 주문서에 쿠폰을 적용하고 갱신된 결제 금액을 반환한다.
 
 <details>
 <summary>상세 보기</summary>
