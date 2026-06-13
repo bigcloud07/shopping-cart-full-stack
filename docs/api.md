@@ -295,3 +295,259 @@ Success
 ```
 
 </details>
+
+## 주문서
+
+### `POST` `/order` - 장바구니 상품들을 주문서에 등록한다.
+
+<details>
+<summary>상세 보기</summary>
+
+Request Body
+
+```js
+[
+  {
+    productId: 1,
+    productQuantity: 2,
+  },
+];
+```
+
+Success
+
+```js
+// Response Status: 201
+// 주문서 리소스가 새로 생성되었기 때문
+
+// No Contents
+```
+
+500 Error
+
+```js
+// Response Status: 500
+// DB에 주문서 테이블이 존재하지 않을 때
+
+{
+  result: "error",
+  message: "주문서 등록에 실패했습니다.",
+};
+```
+
+</details>
+
+### `GET` `/order` - 주문서 정보를 가져온다.
+
+<details>
+<summary>상세 보기</summary>
+
+주문서는 단 한 명의 유저를 위해서 복수형이 아닌 단수형으로 표현
+
+Success
+
+```js
+// Response Status: 200
+// 리소스(주문서 정보)가 메세지 body에 전달되었기 때문
+
+{
+  result: "success",
+  data: {
+    items: [
+      {
+        productId: 1,
+        productPrice: 35000,
+        productQuantity: 2,
+      },
+      {
+        productId: 2,
+        productPrice: 25000,
+        productQuantity: 1,
+      },
+    ],
+    isRemoteArea: false,
+    orderAmount: 70000,
+    couponDiscountAmount: 6000,
+    shippingFee: 6000,
+    totalPaymentAmount: 70000,
+  },
+};
+```
+
+</details>
+
+### `POST` `/order/apply` - 주문서에서 쿠폰이 적용된 결제 금액을 계산한다.
+
+<details>
+<summary>상세 보기</summary>
+
+Request Body
+
+```js
+{
+  productIds: [1, 2],
+  couponIds: [1, 4],
+  isRemoteArea: false,
+}
+```
+
+Success
+
+```js
+// Response Status: 201
+// 주문, 쿠폰 할인, 배송비, 총 결제 금액 계산 결과를 성공적으로 불러왔을 때
+
+{
+  result: "success",
+  data: {
+    totalOrderAmount: 70000,
+    couponDiscountAmount: 6000,
+    shippingFee: 3000,
+    totalPaymentAmount: 67000,
+  },
+};
+```
+
+500 Error
+
+```js
+// Response Status: 500
+// DB에 해당하는 정보가 존재하지 않을 때
+
+{
+  result: "error",
+  message: "결제 금액 계산에 실패했습니다.",
+};
+```
+
+</details>
+
+### `PATCH` `/order` - 제주도 및 도서 산간 지역 체크사항을 업데이트한다.
+
+<details>
+<summary>상세 보기</summary>
+
+Request Body
+
+```js
+{
+  isRemoteArea: true,
+}
+```
+
+Success
+
+```js
+// Response Status: 200
+// 도서 산간 지역 상태가 성공적으로 업데이트되었기 때문
+
+{
+  result: "success",
+  data: {
+    isRemoteArea: true,
+  },
+};
+```
+
+400 Error
+
+```js
+// Response Status: 400
+// isRemoteArea가 boolean이 아니거나 유효하지 않은 값일 때
+
+{
+  result: "error",
+  message: "요청 값이 올바르지 않습니다.",
+};
+```
+
+404 Error
+
+```js
+// Response Status: 404
+// 해당하는 엔드포인트가 존재하지 않을 때
+
+{
+  result: "error",
+  message: "해당하는 리소스가 없습니다.",
+};
+```
+
+500 Error
+
+```js
+// Response Status: 500
+// DB에 해당하는 테이블이 존재하지 않을 때
+
+{
+  result: "error",
+  message: "요청 처리에 실패했습니다.",
+};
+```
+
+</details>
+
+## 쿠폰
+
+### `GET` `/coupons` - 쿠폰 목록과 할인 금액 조합을 모두 가져온다.
+
+<details>
+<summary>상세 보기</summary>
+
+Success
+
+```js
+// Response Status: 200
+// 리소스(쿠폰 정보)가 메세지 body에 전달되었기 때문
+
+{
+  result: "success",
+  data: {
+    coupons: [
+      {
+        id: 1,
+        code: "FIXED5000",
+        description: "5,000원 할인 쿠폰",
+        expirationDate: "2026-11-30",
+        discountType: "fixed",
+        minimumAmount: 100000,
+        discountAmount: 5000,
+        applicable: true,
+      },
+      {
+        id: 2,
+        code: "BOGO",
+        description: "2개 구매시 1개 무료 쿠폰",
+        expirationDate: "2026-06-30",
+        discountType: "bogo",
+        buyQuantity: 2,
+        getQuantity: 1,
+        applicable: false,
+      },
+    ],
+    primaryPrice: {
+      couponIds: [1, 4],
+      couponDiscountAmount: 6000,
+    },
+    secondPrice: [
+      { couponIds: [1], couponDiscountAmount: 5000 },
+      { couponIds: [2], couponDiscountAmount: 5500 },
+      { couponIds: [3, 4], couponDiscountAmount: 6000 },
+    ],
+  },
+};
+```
+
+500 Error
+
+```js
+// Response Status: 500
+// DB에 Coupon 테이블이 존재하지 않을 때
+
+{
+  result: "error",
+  message: "쿠폰 목록 조회에 실패했습니다.",
+};
+```
+
+</details>
