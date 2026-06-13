@@ -366,7 +366,7 @@ Success
       },
     ],
     isRemoteArea: false,
-    orderAmount: 70000,
+    totalOrderAmount: 70000,
     couponDiscountAmount: 6000,
     shippingFee: 6000,
     totalPaymentAmount: 70000,
