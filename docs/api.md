@@ -440,13 +440,19 @@ Success
 // 도서 산간 지역 상태가 갱신되어, 배송비와 총 결제 금액이 재계산되었을 때
 
 {
-  result: "success",
-  data: {
-    totalOrderAmount: 70000,
-    couponDiscountAmount: 6000,
-    shippingFee: 6000,
-    totalPaymentAmount: 70000,
-  },
+  items: [
+    {
+      productId : 1,
+      productPrice: 35000,
+      productQuantity: 2,
+
+    },...
+  ],
+  isRemoteArea: true,
+  orderAmount: 70000,
+  couponDiscountAmount: 6000,
+  shippingFee: 6000,
+  totalPaymentAmount: 700000,
 };
 ```
 
