@@ -100,7 +100,10 @@ export const Item = ({ item, isSelected }: ItemProps) => {
         </DeleteButton>
       </TopRow>
       <ContentRow>
-        <ProductImage src={item.productImg} alt={item.productName} />
+        <ProductImage
+          src={item.productImg || undefined}
+          alt={item.productName}
+        />
         <ProductInfo>
           <ProductName>{item.productName}</ProductName>
           <ProductPrice>{item.productPrice.toLocaleString()}원</ProductPrice>
