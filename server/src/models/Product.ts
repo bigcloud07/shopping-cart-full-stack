@@ -10,6 +10,10 @@ export interface ProductData {
   imgUrl?: string;
 }
 
+export interface ProductRecord extends ProductData {
+  id: number;
+}
+
 export default class Product {
   static MAX_NAME_LENGTH = 100;
 
