@@ -1,5 +1,7 @@
 import type { ProductData } from "../models/Product.js";
-import type { CartItem } from "../controllers/CartController.js";
+import type { CartItem, CartRecord } from "../models/Cart.js";
+import type { ProductRepository } from "../Repository/ProductRepository.js";
+import type { CartRepository } from "../Repository/CartRepository.js";
 
 export class ProductDB {
   #table = new Map<number, ProductData>();
@@ -40,6 +42,74 @@ export class ProductDB {
 export interface DBInterface {
   PRODUCT_TABLE: ProductDB;
   CART_TABLE: Map<number, CartItem>;
+}
+
+export class InMemoryProductRepository implements ProductRepository {
+  constructor(private readonly db: DBInterface) {}
+
+  async findAll() {
+    return Array.from(this.db.PRODUCT_TABLE.entries()).map(([id, productData]) => ({
+      id,
+      ...productData,
+    }));
+  }
+
+  async findById(id: number) {
+    const product = this.db.PRODUCT_TABLE.get(id);
+    return product ? { id, ...product } : null;
+  }
+
+  async findByIds(ids: number[]) {
+    const idSet = new Set(ids);
+    return Array.from(this.db.PRODUCT_TABLE.entries())
+      .filter(([id]) => idSet.has(id))
+      .map(([id, productData]) => ({
+        id,
+        ...productData,
+      }));
+  }
+
+  async create(product: ProductData) {
+    const id = this.db.PRODUCT_TABLE.insert(product);
+    return {
+      id,
+      ...product,
+    };
+  }
+
+  async deleteById(id: number) {
+    this.db.PRODUCT_TABLE.delete(id);
+  }
+}
+
+export class InMemoryCartRepository implements CartRepository {
+  constructor(private readonly db: DBInterface) {}
+
+  async findAll(): Promise<CartRecord[]> {
+    return Array.from(this.db.CART_TABLE.entries()).map(([productId, cartItem]) => ({
+      productId,
+      ...cartItem,
+    }));
+  }
+
+  async findByProductId(productId: number): Promise<CartRecord | null> {
+    const cartItem = this.db.CART_TABLE.get(productId);
+    return cartItem ? { productId, ...cartItem } : null;
+  }
+
+  async updateQuantity(productId: number, quantity: number): Promise<void> {
+    const cartItem = this.db.CART_TABLE.get(productId);
+    if (!cartItem) return;
+
+    this.db.CART_TABLE.set(productId, {
+      ...cartItem,
+      quantity,
+    });
+  }
+
+  async deleteByProductId(productId: number): Promise<void> {
+    this.db.CART_TABLE.delete(productId);
+  }
 }
 
 export const DB: DBInterface = {

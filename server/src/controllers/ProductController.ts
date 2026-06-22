@@ -1,36 +1,18 @@
-import Product from "../models/Product.js";
 import { Request, Response } from "express";
-import type { DBInterface } from "../db/db.js";
 import { ProductValidationError } from "../errors/productError.js";
+import ProductService from "../service/ProductService.js";
+import ServiceError from "../service/ServiceError.js";
 
 export default class ProductController {
-  #db;
+  constructor(private readonly productService: ProductService) {}
 
-  constructor(db: DBInterface) {
-    this.#db = db;
-  }
-
-  getProductAll = (req: Request, res: Response) => {
+  getProductAll = async (req: Request, res: Response) => {
     try {
-      const products = Array.from(this.#db.PRODUCT_TABLE.entries()).map(
-        ([id, productData]) => {
-          const { name, imgUrl, price } = productData;
-          return {
-            id,
-            name,
-            imgUrl,
-            price,
-          };
-        },
-      );
-
-      const sorted = products.sort((a, b) => {
-        return a.id - b.id;
-      });
+      const products = await this.productService.getProducts();
       res.status(200).json({
         result: "success",
         data: {
-          products: sorted,
+          products,
         },
       });
     } catch (error) {
@@ -38,46 +20,41 @@ export default class ProductController {
     }
   };
 
-  getProduct = (req: Request, res: Response) => {
+  getProduct = async (req: Request, res: Response) => {
     try {
       const { productId } = req.params;
-      const numberId = Number(productId);
-      if (Number.isNaN(numberId)) {
-        return res.status(400).json({
-          result: "error",
-          message: "해당하는 상품의 id 형식이 유효하지 않습니다.",
-        });
-      }
-      if (this.#db.PRODUCT_TABLE.has(numberId) === false) {
-        return res.status(404).json({
-          result: "error",
-          message: "해당하는 상품이 없습니다.",
-        });
-      }
-      const { name, imgUrl, price } = this.#db.PRODUCT_TABLE.get(numberId)!;
+      const product = await this.productService.getProduct(String(productId));
       res.status(200).json({
         result: "success",
-        data: { id: numberId, name, imgUrl, price },
+        data: product,
       });
     } catch (error) {
+      if (error instanceof ServiceError) {
+        return res.status(error.status).json({
+          result: "error",
+          message: error.message,
+        });
+      }
+
       res.status(500).json({
         result: "error",
         message: "서버 내부 오류가 발생했습니다.",
       });
     }
   };
-  addProduct = (req: Request, res: Response) => {
+
+  addProduct = async (req: Request, res: Response) => {
     try {
-      const { name, price, imgUrl } = req.body;
-      if (name === undefined || price === undefined) {
-        return res
-          .status(400)
-          .json({ result: "error", message: "형식이 비었습니다" });
-      }
-      const product = new Product({ name, price, imgUrl });
-      this.#db.PRODUCT_TABLE.insert(product.getProduct());
+      await this.productService.addProduct(req.body);
       res.status(201).json();
     } catch (error) {
+      if (error instanceof ServiceError) {
+        return res.status(error.status).json({
+          result: "error",
+          message: error.message,
+        });
+      }
+
       if (error instanceof ProductValidationError) {
         return res.status(error.status).json({
           result: "error",
@@ -89,17 +66,10 @@ export default class ProductController {
     }
   };
 
-  removeProduct = (req: Request, res: Response) => {
+  removeProduct = async (req: Request, res: Response) => {
     try {
       const { productId } = req.params;
-      const numberId = Number(productId);
-
-      if (Number.isNaN(numberId)) {
-        return res.status(204).json();
-      }
-
-      this.#db.CART_TABLE.delete(numberId);
-      this.#db.PRODUCT_TABLE.delete(numberId);
+      await this.productService.removeProduct(String(productId));
       res.status(204).json();
     } catch (error) {
       res.status(500).json();

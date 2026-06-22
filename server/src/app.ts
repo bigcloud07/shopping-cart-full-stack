@@ -1,12 +1,48 @@
 import express from "express";
 import cors from "cors";
 import ProductController from "./controllers/ProductController.js";
-import { DBInterface } from "./db/db.js";
+import {
+  DBInterface,
+  InMemoryCartRepository,
+  InMemoryProductRepository,
+} from "./db/db.js";
 import CartController from "./controllers/CartController.js";
+import ProductService from "./service/ProductService.js";
+import CartService from "./service/CartService.js";
+import type { Repositories } from "./Repository/index.js";
 
-export function createApp(db: DBInterface) {
-  const productController = new ProductController(db);
-  const cartController = new CartController(db);
+export interface AppServices {
+  productService: ProductService;
+  cartService: CartService;
+}
+
+export function createServices(repositories: Repositories): AppServices {
+  return {
+    productService: new ProductService(
+      repositories.productRepository,
+      repositories.cartRepository,
+    ),
+    cartService: new CartService(
+      repositories.cartRepository,
+      repositories.productRepository,
+    ),
+  };
+}
+
+export function createServicesFromDb(db: DBInterface): AppServices {
+  return createServices({
+    productRepository: new InMemoryProductRepository(db),
+    cartRepository: new InMemoryCartRepository(db),
+  });
+}
+
+export function createApp(servicesOrDb: AppServices | DBInterface) {
+  const services =
+    "PRODUCT_TABLE" in servicesOrDb
+      ? createServicesFromDb(servicesOrDb)
+      : servicesOrDb;
+  const productController = new ProductController(services.productService);
+  const cartController = new CartController(services.cartService);
 
   const app = express();
   app.use(cors());
