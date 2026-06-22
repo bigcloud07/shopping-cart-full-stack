@@ -366,7 +366,7 @@ Success
       },
     ],
     isRemoteArea: false,
-    totalOrderAmount: 70000,
+    orderAmount: 70000,
     couponDiscountAmount: 6000,
     shippingFee: 6000,
     totalPaymentAmount: 70000,
@@ -376,7 +376,7 @@ Success
 
 </details>
 
-### `PATCH` `/order/coupon` - 주문서에 쿠폰을 적용하고 갱신된 결제 금액을 반환한다.
+### `POST` `/order/apply` - 주문서에서 쿠폰이 적용된 결제 금액을 계산한다.
 
 <details>
 <summary>상세 보기</summary>
@@ -385,14 +385,16 @@ Request Body
 
 ```js
 {
+  productIds: [1, 2],
   couponIds: [1, 4],
+  isRemoteArea: false,
 }
 ```
 
 Success
 
 ```js
-// Response Status: 200
+// Response Status: 201
 // 주문, 쿠폰 할인, 배송비, 총 결제 금액 계산 결과를 성공적으로 불러왔을 때
 
 {
@@ -420,7 +422,7 @@ Success
 
 </details>
 
-### `PATCH` `/order/destination` - 제주도 및 도서 산간 지역 체크사항을 업데이트한다.
+### `PATCH` `/order` - 제주도 및 도서 산간 지역 체크사항을 업데이트한다.
 
 <details>
 <summary>상세 보기</summary>
@@ -437,22 +439,13 @@ Success
 
 ```js
 // Response Status: 200
-// 도서 산간 지역 상태가 갱신되어, 배송비와 총 결제 금액이 재계산되었을 때
+// 도서 산간 지역 상태가 성공적으로 업데이트되었기 때문
 
 {
-  items: [
-    {
-      productId : 1,
-      productPrice: 35000,
-      productQuantity: 2,
-
-    },...
-  ],
-  isRemoteArea: true,
-  orderAmount: 70000,
-  couponDiscountAmount: 6000,
-  shippingFee: 6000,
-  totalPaymentAmount: 700000,
+  result: "success",
+  data: {
+    isRemoteArea: true,
+  },
 };
 ```
 
