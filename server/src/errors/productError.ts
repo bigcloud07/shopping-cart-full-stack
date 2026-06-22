@@ -16,7 +16,7 @@ export class ProductValidationError extends Error {
 
   constructor(errors: ProductError[]) {
     super("요청 값이 올바르지 않습니다.");
-    this.errors = errors.map(e => ({ ...e }));
+    this.errors = errors.map((e) => ({ ...e }));
   }
 }
 export const productErrors: ProductErrors = {
