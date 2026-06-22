@@ -27,6 +27,14 @@ export default defineConfig({
         target: process.env.API_TARGET ?? "http://localhost:3000",
         changeOrigin: true,
       },
+      "/order": {
+        target: process.env.API_TARGET ?? "http://localhost:3000",
+        changeOrigin: true,
+      },
+      "/coupon": {
+        target: process.env.API_TARGET ?? "http://localhost:3000",
+        changeOrigin: true,
+      },
     },
   },
 });

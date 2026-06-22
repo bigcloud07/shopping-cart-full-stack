@@ -1,96 +1,753 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import {
+  requestApplyCoupons,
+  requestCoupons,
+  requestOrderSummary,
+} from "../api/orderApi";
+import type {
+  CartItem,
+  CouponAvailability,
+  CouponCode,
+  OrderSummaryData,
+} from "../type/type";
+import {
+  alignSummaryItemOrder,
+  buildFallbackSummary,
+  buildOptimisticCoupons,
+  buildOptimisticCouponSummary,
+  enforceShippingPolicy,
+  formatCouponDetail,
+  toOrderLine,
+} from "../utils/orderSummary";
 
-const Wrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  text-align: center;
-  padding: 0 20px;
-  gap: 12px;
-`;
+const MAX_COUPON_COUNT = 2;
 
-const Title = styled.h2`
-  font-size: 22px;
-  font-weight: bold;
+const Page = styled.div`
+  padding: 0 20px 96px;
 `;
 
 const Description = styled.p`
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #222;
+  line-height: 1.5;
 `;
 
-const TotalSection = styled.div`
-  margin-top: 16px;
+const Section = styled.section`
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #eee;
 `;
 
-const TotalLabel = styled.p`
+const SectionTitle = styled.h2`
+  margin-bottom: 12px;
   font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 8px;
+  font-weight: 700;
 `;
 
-const TotalAmount = styled.p`
-  font-size: 28px;
-  font-weight: bold;
+const ItemList = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+const ItemRow = styled.li`
+  display: flex;
+  gap: 16px;
+  list-style: none;
+`;
+
+const ProductImage = styled.img`
+  width: 112px;
+  height: 112px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #f4f4f4;
+`;
+
+const ProductInfo = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+`;
+
+const ProductName = styled.p`
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+`;
+
+const ProductPrice = styled.p`
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 800;
+`;
+
+const ProductQuantity = styled.p`
+  font-size: 13px;
+  font-weight: 700;
+`;
+
+const CouponButton = styled.button`
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+  border: 1px solid #d8d8d8;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const CheckLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const Checkbox = styled.input`
+  width: 18px;
+  height: 18px;
+  accent-color: #000;
+`;
+
+const InfoText = styled.p`
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+  font-size: 12px;
+  color: #333;
+`;
+
+const PriceRows = styled.div`
+  margin-top: 10px;
+`;
+
+const PriceRow = styled.div<{ $strong?: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: ${({ $strong }) => ($strong ? "none" : "1px solid #f2f2f2")};
+  font-size: ${({ $strong }) => ($strong ? "17px" : "15px")};
+  font-weight: ${({ $strong }) => ($strong ? 800 : 700)};
+`;
+
+const NegativeAmount = styled.span`
+  color: #000;
 `;
 
 const BottomBar = styled.div`
   position: fixed;
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%);
+  z-index: 20;
   width: 100%;
   max-width: 480px;
-  background: #ccc;
+  transform: translateX(-50%);
+  background: #000;
 `;
 
-const PayButton = styled.button`
+const PrimaryButton = styled.button`
   width: 100%;
   padding: 20px;
-  background: none;
   border: none;
-  color: #000;
+  background: none;
+  color: #fff;
   font-size: 16px;
-  font-weight: bold;
-  cursor: not-allowed;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
 `;
 
-const Spacer = styled.div`
-  height: 80px;
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 35%);
 `;
+
+const Modal = styled.div`
+  width: min(100%, 360px);
+  max-height: min(620px, calc(100vh - 48px));
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #fff;
+  padding: 22px 28px;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 16px;
+  font-weight: 800;
+`;
+
+const CloseButton = styled.button`
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+`;
+
+const CouponGuide = styled.p`
+  margin-top: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  font-size: 12px;
+`;
+
+const CouponList = styled.ul`
+  display: flex;
+  flex-direction: column;
+`;
+
+const CouponItem = styled.li<{ $disabled: boolean }>`
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+  list-style: none;
+  color: ${({ $disabled }) => ($disabled ? "#bdbdbd" : "#000")};
+`;
+
+const CouponName = styled.span`
+  font-size: 14px;
+  font-weight: 800;
+`;
+
+const CouponMeta = styled.p`
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+`;
+
+const ModalApplyButton = styled.button`
+  width: 100%;
+  height: 48px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+`;
+
+const CenterMessage = styled.div`
+  display: flex;
+  min-height: 58vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  text-align: center;
+`;
+
+const CompleteTitle = styled.h2`
+  font-size: 22px;
+  font-weight: 800;
+`;
+
+const CompleteDescription = styled.p`
+  margin-top: 28px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+`;
+
+const CompleteAmountLabel = styled.p`
+  margin-top: 28px;
+  font-size: 15px;
+  font-weight: 800;
+`;
+
+const CompleteAmount = styled.p`
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 900;
+`;
+
+const formatWon = (amount: number) => `${amount.toLocaleString()}원`;
+
+const hasSameCouponCodes = (
+  currentCouponCodes: CouponCode[],
+  nextCouponCodes: CouponCode[],
+) => {
+  if (currentCouponCodes.length !== nextCouponCodes.length) return false;
+
+  return currentCouponCodes.every(
+    (couponCode, index) => couponCode === nextCouponCodes[index],
+  );
+};
 
 interface OrderConfirmProps {
+  items: CartItem[];
   itemCount: number;
   totalQuantity: number;
-  totalAmount: number;
+  onReturnToCart: () => void;
 }
 
 export const OrderConfirm = ({
+  items,
   itemCount,
   totalQuantity,
-  totalAmount,
+  onReturnToCart,
 }: OrderConfirmProps) => {
+  const [isRemoteArea, setIsRemoteArea] = useState(false);
+  const [summary, setSummary] = useState<OrderSummaryData>(() =>
+    buildFallbackSummary(items, false),
+  );
+  const [coupons, setCoupons] = useState<CouponAvailability[]>([]);
+  const [recommendedCouponCodes, setRecommendedCouponCodes] = useState<
+    CouponCode[]
+  >([]);
+  const [draftCouponCodes, setDraftCouponCodes] = useState<CouponCode[]>([]);
+  const [appliedCouponCodes, setAppliedCouponCodes] = useState<CouponCode[]>(
+    [],
+  );
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isPaymentConfirmed, setIsPaymentConfirmed] = useState(false);
+  const couponRequestIdRef = useRef(0);
+  const isCouponModalOpenRef = useRef(false);
+
+  useEffect(() => {
+    isCouponModalOpenRef.current = isCouponModalOpen;
+  }, [isCouponModalOpen]);
+
+  const syncDraftCouponCodes = useCallback(
+    (nextCouponCodes: CouponCode[]) => {
+      setDraftCouponCodes((prev) => {
+        if (hasSameCouponCodes(prev, nextCouponCodes)) {
+          return prev;
+        }
+
+        if (isCouponModalOpenRef.current) {
+          return prev;
+        }
+
+        return nextCouponCodes;
+      });
+    },
+    [],
+  );
+
+  const loadCoupons = useCallback(
+    async (showLoading = false) => {
+      const requestId = couponRequestIdRef.current + 1;
+      couponRequestIdRef.current = requestId;
+
+      if (showLoading) {
+        setIsLoadingCoupons(true);
+      }
+
+      try {
+        const couponData = await requestCoupons(items, isRemoteArea);
+
+        if (couponRequestIdRef.current !== requestId) return;
+
+        setCoupons(couponData.coupons);
+        setRecommendedCouponCodes(couponData.bestCouponCodes);
+        syncDraftCouponCodes(
+          appliedCouponCodes.length > 0
+            ? appliedCouponCodes
+            : couponData.bestCouponCodes,
+        );
+      } catch (error) {
+        if (couponRequestIdRef.current !== requestId) return;
+
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "쿠폰 정보를 불러오지 못했습니다.",
+        );
+      } finally {
+        if (couponRequestIdRef.current === requestId) {
+          setIsLoadingCoupons(false);
+        }
+      }
+    },
+    [items, isRemoteArea, appliedCouponCodes, syncDraftCouponCodes],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadOrder = async () => {
+      const fallbackSummary = buildFallbackSummary(items, isRemoteArea);
+      setSummary((prev) =>
+        appliedCouponCodes.length > 0
+          ? enforceShippingPolicy(prev, isRemoteArea)
+          : fallbackSummary,
+      );
+      setIsLoadingOrder(true);
+      setErrorMessage("");
+      try {
+        const nextSummary =
+          appliedCouponCodes.length > 0
+            ? await requestApplyCoupons(items, isRemoteArea, appliedCouponCodes)
+            : await requestOrderSummary(items, isRemoteArea);
+        if (!ignore) {
+          setSummary(
+            enforceShippingPolicy(
+              alignSummaryItemOrder(nextSummary, items),
+              isRemoteArea,
+            ),
+          );
+        }
+      } catch (error) {
+        if (!ignore) {
+          setSummary((prev) =>
+            appliedCouponCodes.length > 0
+              ? enforceShippingPolicy(prev, isRemoteArea)
+              : buildFallbackSummary(items, isRemoteArea),
+          );
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "주문 정보를 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingOrder(false);
+        }
+      }
+    };
+
+    loadOrder();
+
+    return () => {
+      ignore = true;
+    };
+  }, [items, isRemoteArea, appliedCouponCodes]);
+
+  useEffect(() => {
+    let ignore = false;
+    const requestId = couponRequestIdRef.current + 1;
+    couponRequestIdRef.current = requestId;
+
+    const preloadCoupons = async () => {
+      try {
+        const couponData = await requestCoupons(items, isRemoteArea);
+
+        if (ignore || couponRequestIdRef.current !== requestId) return;
+
+        setCoupons(couponData.coupons);
+        setRecommendedCouponCodes(couponData.bestCouponCodes);
+        syncDraftCouponCodes(
+          appliedCouponCodes.length > 0
+            ? appliedCouponCodes
+            : couponData.bestCouponCodes,
+        );
+      } catch (error) {
+        if (ignore || couponRequestIdRef.current !== requestId) return;
+
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "쿠폰 정보를 불러오지 못했습니다.",
+        );
+      }
+    };
+
+    void preloadCoupons();
+
+    return () => {
+      ignore = true;
+    };
+  }, [items, isRemoteArea, appliedCouponCodes, syncDraftCouponCodes]);
+
+  const selectedCouponDiscount = useMemo(
+    () =>
+      coupons
+        .filter(({ coupon }) => draftCouponCodes.includes(coupon.code))
+        .reduce((total, { expectedDiscountAmount }) => {
+          return total + expectedDiscountAmount;
+        }, 0),
+    [coupons, draftCouponCodes],
+  );
+
+  const openCouponModal = () => {
+    setIsCouponModalOpen(true);
+    setErrorMessage("");
+
+    if (coupons.length === 0) {
+      const optimisticCouponData = buildOptimisticCoupons(items, isRemoteArea);
+      setCoupons(optimisticCouponData.coupons);
+      setRecommendedCouponCodes(optimisticCouponData.bestCouponCodes);
+      setDraftCouponCodes(
+        appliedCouponCodes.length > 0
+          ? appliedCouponCodes
+          : optimisticCouponData.bestCouponCodes,
+      );
+      void loadCoupons(false);
+    } else {
+      setDraftCouponCodes(
+        appliedCouponCodes.length > 0
+          ? appliedCouponCodes
+          : recommendedCouponCodes,
+      );
+    }
+  };
+
+  const toggleCoupon = (coupon: CouponAvailability) => {
+    if (!coupon.isAvailable) return;
+
+    setDraftCouponCodes((prev) => {
+      if (prev.includes(coupon.coupon.code)) {
+        return prev.filter((code) => code !== coupon.coupon.code);
+      }
+
+      if (prev.length >= MAX_COUPON_COUNT) {
+        return prev;
+      }
+
+      return [...prev, coupon.coupon.code];
+    });
+  };
+
+  const applyCoupons = async () => {
+    const previousSummary = summary;
+    setSummary(
+      buildOptimisticCouponSummary(summary, coupons, draftCouponCodes),
+    );
+    setIsCouponModalOpen(false);
+    setIsLoadingCoupons(true);
+    setErrorMessage("");
+    try {
+      const nextSummary = await requestApplyCoupons(
+        items,
+        isRemoteArea,
+        draftCouponCodes,
+      );
+      setSummary(
+        enforceShippingPolicy(
+          alignSummaryItemOrder(nextSummary, items),
+          isRemoteArea,
+        ),
+      );
+      setAppliedCouponCodes(nextSummary.selectedCouponCodes);
+      setDraftCouponCodes(nextSummary.selectedCouponCodes);
+    } catch (error) {
+      setSummary(previousSummary);
+      setErrorMessage(
+        error instanceof Error ? error.message : "쿠폰 적용에 실패했습니다.",
+      );
+    } finally {
+      setIsLoadingCoupons(false);
+    }
+  };
+
+  const changeRemoteArea = (nextIsRemoteArea: boolean) => {
+    setIsRemoteArea(nextIsRemoteArea);
+    setDraftCouponCodes(appliedCouponCodes);
+    setSummary((prev) =>
+      appliedCouponCodes.length > 0
+        ? enforceShippingPolicy(prev, nextIsRemoteArea)
+        : buildFallbackSummary(items, nextIsRemoteArea),
+    );
+  };
+
+  const orderItems =
+    summary.orderItems.length > 0 ? summary.orderItems : items.map(toOrderLine);
+  const totalDiscountAmount = summary.price.totalDiscountAmount;
+  const displayTotalAmount = summary.price.finalPaymentAmount;
+
+  if (isPaymentConfirmed) {
+    return (
+      <>
+        <CenterMessage>
+          <CompleteTitle>결제 확인</CompleteTitle>
+          <CompleteDescription>
+            총 {itemCount}종류의 상품 {totalQuantity}개를 주문했습니다.
+            <br />
+            최종 결제 금액을 확인해 주세요.
+          </CompleteDescription>
+          <CompleteAmountLabel>총 결제 금액</CompleteAmountLabel>
+          <CompleteAmount>{formatWon(displayTotalAmount)}</CompleteAmount>
+        </CenterMessage>
+        <BottomBar>
+          <PrimaryButton onClick={onReturnToCart}>
+            장바구니로 돌아가기
+          </PrimaryButton>
+        </BottomBar>
+      </>
+    );
+  }
+
   return (
     <>
-      <Wrapper>
-        <Title>주문 확인</Title>
+      <Page>
         <Description>
           총 {itemCount}종류의 상품 {totalQuantity}개를 주문합니다.
           <br />
           최종 결제 금액을 확인해 주세요.
         </Description>
-        <TotalSection>
-          <TotalLabel>총 결제 금액</TotalLabel>
-          <TotalAmount>{totalAmount.toLocaleString()}원</TotalAmount>
-        </TotalSection>
-      </Wrapper>
-      <Spacer />
+
+        {errorMessage && <InfoText role="alert">{errorMessage}</InfoText>}
+
+        <Section>
+          <ItemList>
+            {orderItems.map((item) => (
+              <ItemRow key={item.productId}>
+                <ProductImage
+                  src={item.productImg || undefined}
+                  alt={item.productName}
+                />
+                <ProductInfo>
+                  <ProductName>{item.productName}</ProductName>
+                  <ProductPrice>{formatWon(item.productPrice)}</ProductPrice>
+                  <ProductQuantity>{item.quantity}개</ProductQuantity>
+                </ProductInfo>
+              </ItemRow>
+            ))}
+          </ItemList>
+          <CouponButton onClick={openCouponModal}>쿠폰 적용</CouponButton>
+        </Section>
+
+        <Section>
+          <SectionTitle>배송 정보</SectionTitle>
+          <CheckLabel>
+            <Checkbox
+              type="checkbox"
+              checked={isRemoteArea}
+              onChange={(event) => {
+                changeRemoteArea(event.target.checked);
+              }}
+            />
+            제주도 및 도서 산간 지역
+          </CheckLabel>
+          <InfoText>
+            ⓘ 총 주문 금액이 100,000원 이상일 경우, 무료 배송됩니다.
+          </InfoText>
+        </Section>
+
+        <Section>
+          <PriceRows>
+            <PriceRow>
+              <span>주문 금액</span>
+              <span>{formatWon(summary.price.orderAmount)}</span>
+            </PriceRow>
+            <PriceRow>
+              <span>쿠폰 할인 금액</span>
+              <NegativeAmount>-{formatWon(totalDiscountAmount)}</NegativeAmount>
+            </PriceRow>
+            <PriceRow>
+              <span>배송비</span>
+              <span>{formatWon(summary.price.shippingFee)}</span>
+            </PriceRow>
+            <PriceRow $strong>
+              <span>총 결제 금액</span>
+              <span>{formatWon(displayTotalAmount)}</span>
+            </PriceRow>
+          </PriceRows>
+        </Section>
+      </Page>
+
       <BottomBar>
-        <PayButton disabled>결제하기</PayButton>
+        <PrimaryButton
+          aria-busy={isLoadingOrder}
+          onClick={() => setIsPaymentConfirmed(true)}
+        >
+          결제하기
+        </PrimaryButton>
       </BottomBar>
+
+      {isCouponModalOpen && (
+        <Overlay role="presentation">
+          <Modal role="dialog" aria-modal="true" aria-label="쿠폰 선택">
+            <ModalHeader>
+              <ModalTitle>쿠폰을 선택해 주세요</ModalTitle>
+              <CloseButton
+                type="button"
+                aria-label="쿠폰 선택 닫기"
+                onClick={() => setIsCouponModalOpen(false)}
+              >
+                ×
+              </CloseButton>
+            </ModalHeader>
+            <CouponGuide>
+              ⓘ 쿠폰은 최대 {MAX_COUPON_COUNT}개까지 사용할 수 있습니다.
+            </CouponGuide>
+
+            {isLoadingCoupons ? (
+              <InfoText>쿠폰을 불러오는 중입니다.</InfoText>
+            ) : (
+              <CouponList>
+                {coupons.map((coupon) => {
+                  const isChecked = draftCouponCodes.includes(
+                    coupon.coupon.code,
+                  );
+                  return (
+                    <CouponItem
+                      key={coupon.coupon.code}
+                      $disabled={!coupon.isAvailable}
+                    >
+                      <CheckLabel>
+                        <Checkbox
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={!coupon.isAvailable}
+                          onChange={() => toggleCoupon(coupon)}
+                        />
+                        <CouponName>{coupon.coupon.description}</CouponName>
+                      </CheckLabel>
+                      <CouponMeta>
+                        만료일: {coupon.coupon.expirationDate}
+                        <br />
+                        {formatCouponDetail(coupon)}
+                        <br />
+                        {coupon.isAvailable
+                          ? `예상 할인: ${formatWon(coupon.expectedDiscountAmount)}`
+                          : coupon.unavailableReason}
+                      </CouponMeta>
+                    </CouponItem>
+                  );
+                })}
+              </CouponList>
+            )}
+
+            <ModalApplyButton
+              disabled={isLoadingCoupons}
+              onClick={applyCoupons}
+            >
+              총 {formatWon(selectedCouponDiscount)} 할인 쿠폰 사용하기
+            </ModalApplyButton>
+          </Modal>
+        </Overlay>
+      )}
     </>
   );
 };

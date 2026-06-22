@@ -129,12 +129,13 @@ export const Cart = () => {
       <Header
         onBack={isConfirming ? () => setIsConfirming(false) : undefined}
       />
-      <Title />
+      <Title>{isConfirming ? "주문 확인" : "장바구니"}</Title>
       {isConfirming ? (
         <OrderConfirm
+          items={selectedItems}
           itemCount={selectedItems.length}
           totalQuantity={totalQuantity}
-          totalAmount={totalPaymentAmount}
+          onReturnToCart={() => setIsConfirming(false)}
         />
       ) : (
         <>
