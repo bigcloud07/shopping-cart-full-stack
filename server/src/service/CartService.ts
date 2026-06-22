@@ -1,7 +1,10 @@
-import type { CartItemResponse } from "../models/Cart.js";
+import type { CartItemResponse, CartRecord } from "../models/Cart.js";
 import type { CartRepository } from "../Repository/CartRepository.js";
 import type { ProductRepository } from "../Repository/ProductRepository.js";
 import ServiceError from "./ServiceError.js";
+
+const MIN_CART_QUANTITY = 1;
+const MAX_CART_QUANTITY = 99;
 
 export default class CartService {
   constructor(
@@ -11,9 +14,7 @@ export default class CartService {
 
   async getAllItems(): Promise<CartItemResponse[]> {
     const cartItems = await this.cartRepository.findAll();
-    const productIds = cartItems
-      .filter(item => item.productData === undefined)
-      .map(item => item.productId);
+    const productIds = this.#getProductIdsToLoad(cartItems);
     const products = await this.productRepository.findByIds(productIds);
     const productById = new Map(products.map(product => [product.id, product]));
 
@@ -37,19 +38,12 @@ export default class CartService {
       });
   }
 
-  async updateQuantity(productId: string, quantity: unknown) {
-    const id = Number(productId);
-    const parsedQuantity = Number(quantity);
-
-    if (
-      Number.isNaN(parsedQuantity) ||
-      Number.isNaN(id) ||
-      !Number.isInteger(parsedQuantity) ||
-      parsedQuantity < 1 ||
-      parsedQuantity > 99
-    ) {
-      throw new ServiceError(400, "수량이 유효하지 않습니다.");
-    }
+  async updateQuantity(
+    productId: string,
+    quantity: unknown,
+  ): Promise<{ productId: number; quantity: number }> {
+    const id = this.#parseProductId(productId);
+    const parsedQuantity = this.#parseQuantity(quantity);
 
     const cartItem = await this.cartRepository.findByProductId(id);
     if (!cartItem) {
@@ -65,12 +59,56 @@ export default class CartService {
   }
 
   async deleteItem(productId: string): Promise<void> {
-    const id = Number(productId);
+    const id = this.#parseOptionalProductId(productId);
 
-    if (!id || Number.isNaN(id) || id < 1) {
+    if (id === null) {
       return;
     }
 
     await this.cartRepository.deleteByProductId(id);
+  }
+
+  #getProductIdsToLoad(cartItems: CartRecord[]): number[] {
+    return [
+      ...new Set(
+        cartItems
+          .filter(item => item.productData === undefined)
+          .map(item => item.productId),
+      ),
+    ];
+  }
+
+  #parseProductId(productId: string): number {
+    const id = Number(productId);
+
+    if (!Number.isInteger(id) || id < 1) {
+      throw new ServiceError(400, "수량이 유효하지 않습니다.");
+    }
+
+    return id;
+  }
+
+  #parseOptionalProductId(productId: string): number | null {
+    const id = Number(productId);
+
+    if (!Number.isInteger(id) || id < 1) {
+      return null;
+    }
+
+    return id;
+  }
+
+  #parseQuantity(quantity: unknown): number {
+    const parsedQuantity = Number(quantity);
+
+    if (
+      !Number.isInteger(parsedQuantity) ||
+      parsedQuantity < MIN_CART_QUANTITY ||
+      parsedQuantity > MAX_CART_QUANTITY
+    ) {
+      throw new ServiceError(400, "수량이 유효하지 않습니다.");
+    }
+
+    return parsedQuantity;
   }
 }

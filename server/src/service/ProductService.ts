@@ -40,9 +40,9 @@ export default class ProductService {
   }
 
   async removeProduct(productId: string): Promise<void> {
-    const id = Number(productId);
+    const id = this.#parseOptionalProductId(productId);
 
-    if (Number.isNaN(id)) {
+    if (id === null) {
       return;
     }
 
@@ -53,11 +53,21 @@ export default class ProductService {
   #parseProductId(productId: string): number {
     const id = Number(productId);
 
-    if (Number.isNaN(id)) {
+    if (!Number.isInteger(id) || id < 1) {
       throw new ServiceError(
         400,
         "해당하는 상품의 id 형식이 유효하지 않습니다.",
       );
+    }
+
+    return id;
+  }
+
+  #parseOptionalProductId(productId: string): number | null {
+    const id = Number(productId);
+
+    if (!Number.isInteger(id) || id < 1) {
+      return null;
     }
 
     return id;

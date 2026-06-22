@@ -67,8 +67,14 @@ export default class SupabaseCartRepository implements CartRepository {
   }
 
   #toCartRecord(row: CartRow): CartRecord {
+    const productId = row.productId ?? row.product_id;
+
+    if (productId === undefined) {
+      throw new Error("Cart row does not include a product id.");
+    }
+
     return {
-      productId: row.productId ?? row.product_id ?? 0,
+      productId,
       quantity: row.quantity,
     };
   }

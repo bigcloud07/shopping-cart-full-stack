@@ -4,16 +4,20 @@ import ProductController from "./controllers/ProductController.js";
 import {
   DBInterface,
   InMemoryCartRepository,
+  InMemoryCouponRepository,
   InMemoryProductRepository,
 } from "./db/db.js";
 import CartController from "./controllers/CartController.js";
 import ProductService from "./service/ProductService.js";
 import CartService from "./service/CartService.js";
-import type { Repositories } from "./Repository/index.js";
+import OrderService from "./service/OrderService.js";
+import OrderController from "./controllers/OrderController.js";
+import type { Repositories } from "./Repository/createRepositories.js";
 
 export interface AppServices {
   productService: ProductService;
   cartService: CartService;
+  orderService: OrderService;
 }
 
 export function createServices(repositories: Repositories): AppServices {
@@ -26,6 +30,11 @@ export function createServices(repositories: Repositories): AppServices {
       repositories.cartRepository,
       repositories.productRepository,
     ),
+    orderService: new OrderService(
+      repositories.cartRepository,
+      repositories.productRepository,
+      repositories.couponRepository,
+    ),
   };
 }
 
@@ -33,6 +42,7 @@ export function createServicesFromDb(db: DBInterface): AppServices {
   return createServices({
     productRepository: new InMemoryProductRepository(db),
     cartRepository: new InMemoryCartRepository(db),
+    couponRepository: new InMemoryCouponRepository(),
   });
 }
 
@@ -43,6 +53,7 @@ export function createApp(servicesOrDb: AppServices | DBInterface) {
       : servicesOrDb;
   const productController = new ProductController(services.productService);
   const cartController = new CartController(services.cartService);
+  const orderController = new OrderController(services.orderService);
 
   const app = express();
   app.use(cors());
@@ -64,10 +75,19 @@ export function createApp(servicesOrDb: AppServices | DBInterface) {
     cartController.getAllItems(req, res);
   });
   app.patch("/cart/:productId", (req, res) => {
-    cartController.updateQuantitiy(req, res);
+    cartController.updateQuantity(req, res);
   });
   app.delete("/cart/:productId", (req, res) => {
     cartController.deleteItem(req, res);
+  });
+  app.post("/order", (req, res) => {
+    orderController.createOrder(req, res);
+  });
+  app.get("/coupon", (req, res) => {
+    orderController.getCoupons(req, res);
+  });
+  app.patch("/order/coupon", (req, res) => {
+    orderController.applyCoupons(req, res);
   });
 
   return app;

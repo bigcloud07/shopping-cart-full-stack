@@ -5,10 +5,14 @@ import SupabaseCartRepository, {
 import SupabaseProductRepository, {
   type ProductRepository,
 } from "./ProductRepository.js";
+import SupabaseCouponRepository, {
+  type CouponRepository,
+} from "./CouponRepository.js";
 
 export interface Repositories {
   productRepository: ProductRepository;
   cartRepository: CartRepository;
+  couponRepository: CouponRepository;
 }
 
 export function createSupabaseRepositories(
@@ -17,5 +21,6 @@ export function createSupabaseRepositories(
   return {
     productRepository: new SupabaseProductRepository(supabase),
     cartRepository: new SupabaseCartRepository(supabase),
+    couponRepository: new SupabaseCouponRepository(supabase),
   };
 }

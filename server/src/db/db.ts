@@ -1,7 +1,9 @@
-import type { ProductData } from "../models/Product.js";
+import type { ProductData, ProductRecord } from "../models/Product.js";
 import type { CartItem, CartRecord } from "../models/Cart.js";
 import type { ProductRepository } from "../Repository/ProductRepository.js";
 import type { CartRepository } from "../Repository/CartRepository.js";
+import type { CouponRepository } from "../Repository/CouponRepository.js";
+import { DEFAULT_COUPONS, type CouponCode } from "../models/Coupon.js";
 
 export class ProductDB {
   #table = new Map<number, ProductData>();
@@ -47,19 +49,19 @@ export interface DBInterface {
 export class InMemoryProductRepository implements ProductRepository {
   constructor(private readonly db: DBInterface) {}
 
-  async findAll() {
+  async findAll(): Promise<ProductRecord[]> {
     return Array.from(this.db.PRODUCT_TABLE.entries()).map(([id, productData]) => ({
       id,
       ...productData,
     }));
   }
 
-  async findById(id: number) {
+  async findById(id: number): Promise<ProductRecord | null> {
     const product = this.db.PRODUCT_TABLE.get(id);
     return product ? { id, ...product } : null;
   }
 
-  async findByIds(ids: number[]) {
+  async findByIds(ids: number[]): Promise<ProductRecord[]> {
     const idSet = new Set(ids);
     return Array.from(this.db.PRODUCT_TABLE.entries())
       .filter(([id]) => idSet.has(id))
@@ -69,7 +71,7 @@ export class InMemoryProductRepository implements ProductRepository {
       }));
   }
 
-  async create(product: ProductData) {
+  async create(product: ProductData): Promise<ProductRecord> {
     const id = this.db.PRODUCT_TABLE.insert(product);
     return {
       id,
@@ -77,7 +79,7 @@ export class InMemoryProductRepository implements ProductRepository {
     };
   }
 
-  async deleteById(id: number) {
+  async deleteById(id: number): Promise<void> {
     this.db.PRODUCT_TABLE.delete(id);
   }
 }
@@ -112,56 +114,22 @@ export class InMemoryCartRepository implements CartRepository {
   }
 }
 
-export const DB: DBInterface = {
-  PRODUCT_TABLE: new ProductDB(),
-  CART_TABLE: new Map<number, CartItem>(),
-};
+export class InMemoryCouponRepository implements CouponRepository {
+  async findAll() {
+    return DEFAULT_COUPONS.map(coupon => ({ ...coupon }));
+  }
 
-DB.PRODUCT_TABLE.insert({ name: "상품 A", price: 10000 });
-DB.PRODUCT_TABLE.insert({
-  name: "상품 B",
-  price: 25000,
-  imgUrl: "https://example.com/b.jpg",
-});
+  async findByCodes(couponCodes: CouponCode[]) {
+    const codeSet = new Set(couponCodes);
+    return DEFAULT_COUPONS.filter(coupon => codeSet.has(coupon.code)).map(
+      coupon => ({ ...coupon }),
+    );
+  }
+}
 
-DB.CART_TABLE.set(1, {
-  productData: {
-    name: "상품 A",
-    price: 10000,
-    imgUrl: "https://picsum.photos/200/200?random=1",
-  },
-  quantity: 2,
-});
-
-DB.CART_TABLE.set(2, {
-  productData: {
-    name: "상품 B",
-    price: 25000,
-    imgUrl: "https://picsum.photos/200/200?random=2",
-  },
-  quantity: 1,
-});
-DB.CART_TABLE.set(2, {
-  productData: {
-    name: "상품 C",
-    price: 25000,
-    imgUrl: "https://picsum.photos/200/200?random=2",
-  },
-  quantity: 1,
-});
-DB.CART_TABLE.set(3, {
-  productData: {
-    name: "상품 D",
-    price: 25000,
-    imgUrl: "https://picsum.photos/200/200?random=3",
-  },
-  quantity: 1,
-});
-DB.CART_TABLE.set(4, {
-  productData: {
-    name: "상품 E",
-    price: 25000,
-    imgUrl: "https://picsum.photos/200/200?random=4",
-  },
-  quantity: 1,
-});
+export function createInMemoryDb(): DBInterface {
+  return {
+    PRODUCT_TABLE: new ProductDB(),
+    CART_TABLE: new Map<number, CartItem>(),
+  };
+}

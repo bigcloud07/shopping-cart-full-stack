@@ -1,6 +1,6 @@
 import { createApp, createServices } from "./app.js";
-import { createSupabaseRepositories } from "./Repository/index.js";
-import { createSupabaseClient } from "./Repository/supabaseClient.js";
+import { createSupabaseRepositories } from "./Repository/createRepositories.js";
+import { createSupabaseClient } from "./config/supabaseClient.js";
 
 const PORT = process.env.PORT ?? 3000;
 const supabase = createSupabaseClient();

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import CartService from "../service/CartService.js";
-import ServiceError from "../service/ServiceError.js";
+import { sendErrorResponse } from "./httpResponse.js";
 
 export default class CartController {
   constructor(private readonly cartService: CartService) {}
@@ -16,18 +16,11 @@ export default class CartController {
         },
       });
     } catch (error) {
-      if (error instanceof ServiceError) {
-        return res.status(error.status).json({
-          result: "error",
-          message: error.message,
-        });
-      }
-
-      res.status(500).json();
+      sendErrorResponse(res, error);
     }
   };
 
-  updateQuantitiy = async (req: Request, res: Response) => {
+  updateQuantity = async (req: Request, res: Response) => {
     try {
       const { productId } = req.params;
       const { quantity } = req.body;
@@ -41,14 +34,7 @@ export default class CartController {
         data: updatedItem,
       });
     } catch (error) {
-      if (error instanceof ServiceError) {
-        return res.status(error.status).json({
-          result: "error",
-          message: error.message,
-        });
-      }
-
-      res.status(500).json();
+      sendErrorResponse(res, error);
     }
   };
 
@@ -58,7 +44,7 @@ export default class CartController {
       await this.cartService.deleteItem(String(productId));
       res.status(204).json();
     } catch (error) {
-      res.status(500).json();
+      sendErrorResponse(res, error);
     }
   };
 }
