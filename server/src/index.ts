@@ -24,6 +24,4 @@ if (!hasSupabaseConfig) {
 }
 
 const app = createApp(services);
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+app.listen(PORT);
