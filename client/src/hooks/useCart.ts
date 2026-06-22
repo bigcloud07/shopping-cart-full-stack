@@ -30,7 +30,7 @@ const toError = (err: unknown): Error =>
 export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMutating, setIsMutating] = useState(false);
+  const [pendingMutationCount, setPendingMutationCount] = useState(0);
   const [error, setError] = useState<Error | null>(null);
 
   const refetch = async () => {
@@ -57,54 +57,88 @@ export const useCart = (): UseCartReturn => {
     load();
   }, []);
 
+  const patchQuantity = async (productId: number, quantity: number) => {
+    return fetch(`${API_URL}/cart/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity }),
+    });
+  };
+
+  const rollbackCartItems = (previousCartItems: CartItem[], err: unknown) => {
+    setCartItems(previousCartItems);
+    setError(toError(err));
+  };
+
   const increaseQuantity = async (productId: number, quantity: number) => {
-    if (isMutating) return;
-    setIsMutating(true);
+    const nextQuantity = quantity + 1;
+    const previousCartItems = cartItems;
+
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: nextQuantity }
+          : item,
+      ),
+    );
+    setPendingMutationCount((count) => count + 1);
+    setError(null);
+
     try {
-      const res = await fetch(`${API_URL}/cart/${productId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity: quantity + 1 }),
-      });
+      const res = await patchQuantity(productId, nextQuantity);
       if (!res.ok) {
         throw new Error("수량 변경에 실패했습니다.");
       }
-      await refetch();
     } catch (err) {
-      setError(toError(err));
+      rollbackCartItems(previousCartItems, err);
     } finally {
-      setIsMutating(false);
+      setPendingMutationCount((count) => Math.max(0, count - 1));
     }
   };
 
   const decreaseQuantity = async (productId: number, quantity: number) => {
-    if (isMutating) return true;
-    setIsMutating(true);
+    const nextQuantity = quantity - 1;
+    if (nextQuantity < 1) {
+      return false;
+    }
+
+    const previousCartItems = cartItems;
+
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: nextQuantity }
+          : item,
+      ),
+    );
+    setPendingMutationCount((count) => count + 1);
+    setError(null);
+
     try {
-      const res = await fetch(`${API_URL}/cart/${productId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity: quantity - 1 }),
-      });
+      const res = await patchQuantity(productId, nextQuantity);
       if (res.status === 400) {
+        setCartItems(previousCartItems);
         return false;
       }
       if (!res.ok) {
         throw new Error("수량 변경에 실패했습니다.");
       }
-      await refetch();
       return true;
     } catch (err) {
-      setError(toError(err));
+      rollbackCartItems(previousCartItems, err);
       return true;
     } finally {
-      setIsMutating(false);
+      setPendingMutationCount((count) => Math.max(0, count - 1));
     }
   };
 
   const removeItem = async (productId: number) => {
-    if (isMutating) return;
-    setIsMutating(true);
+    const previousCartItems = cartItems;
+
+    setCartItems((prev) => prev.filter((item) => item.productId !== productId));
+    setPendingMutationCount((count) => count + 1);
+    setError(null);
+
     try {
       const res = await fetch(`${API_URL}/cart/${productId}`, {
         method: "DELETE",
@@ -112,18 +146,17 @@ export const useCart = (): UseCartReturn => {
       if (!res.ok) {
         throw new Error("상품 삭제에 실패했습니다.");
       }
-      await refetch();
     } catch (err) {
-      setError(toError(err));
+      rollbackCartItems(previousCartItems, err);
     } finally {
-      setIsMutating(false);
+      setPendingMutationCount((count) => Math.max(0, count - 1));
     }
   };
 
   return {
     cartItems,
     isLoading,
-    isMutating,
+    isMutating: pendingMutationCount > 0,
     error,
     refetch,
     increaseQuantity,

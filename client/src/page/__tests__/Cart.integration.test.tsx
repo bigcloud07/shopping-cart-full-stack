@@ -54,9 +54,11 @@ describe("Cart 통합 테스트", () => {
       expect(screen.getByText("상품 B")).toBeInTheDocument();
     });
 
-    const checkboxes = screen.getAllByRole("checkbox");
-    checkboxes.forEach((checkbox) => {
-      expect(checkbox).toBeChecked();
+    await waitFor(() => {
+      const checkboxes = screen.getAllByRole("checkbox");
+      checkboxes.forEach((checkbox) => {
+        expect(checkbox).toBeChecked();
+      });
     });
   });
 
@@ -81,6 +83,39 @@ describe("Cart 통합 테스트", () => {
     await userEvent.click(screen.getByText("+"));
 
     await waitFor(() => expect(screen.getByText("3")).toBeInTheDocument());
+  });
+
+  test("+ 버튼 클릭 시 서버 응답 전에 수량을 먼저 갱신한다", async () => {
+    let cartFetchCount = 0;
+    let resolvePatch: () => void = () => {};
+    const patchResponse = new Promise<void>((resolve) => {
+      resolvePatch = resolve;
+    });
+
+    server.use(
+      http.get("/cart", () => {
+        cartFetchCount++;
+        return HttpResponse.json(
+          makeCartResponse([
+            { productId: 1, productName: "상품 A", productImg: "", productPrice: 10000, quantity: 2 },
+          ]),
+        );
+      }),
+      http.patch("/cart/:productId", async () => {
+        await patchResponse;
+        return HttpResponse.json({ result: "success" });
+      }),
+    );
+
+    render(<Cart />);
+    await waitFor(() => screen.getByText("상품 A"));
+
+    await userEvent.click(screen.getByText("+"));
+
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(cartFetchCount).toBe(1);
+
+    resolvePatch();
   });
 
   test("삭제 버튼 클릭 시 해당 상품이 목록에서 제거된다", async () => {
