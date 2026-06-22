@@ -27,7 +27,7 @@ interface HeaderProps {
 export const Header = ({ onBack }: HeaderProps) => {
   return (
     <HeaderWrapper>
-      {onBack ? <BackButton onClick={onBack}>← 뒤로가기</BackButton> : "SHOP"}
+      {onBack ? <BackButton onClick={onBack}>←</BackButton> : "SHOP"}
     </HeaderWrapper>
   );
 };
