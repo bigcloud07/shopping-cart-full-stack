@@ -91,7 +91,7 @@ export default class Order {
 
     return {
       orderItems: this.orderItems,
-      selectedCouponCodes: selectedCoupons.map(coupon => coupon.code),
+      selectedCouponCodes: selectedCoupons.map((coupon) => coupon.code),
       appliedCoupons,
       bestCouponCodes: [],
       price: {
@@ -101,14 +101,17 @@ export default class Order {
         shippingDiscountAmount,
         totalDiscountAmount,
         finalPaymentAmount:
-          orderAmount - productDiscountAmount + shippingFee - shippingDiscountAmount,
+          orderAmount -
+          productDiscountAmount +
+          shippingFee -
+          shippingDiscountAmount,
       },
       isRemoteArea: this.isRemoteArea,
     };
   }
 
   getCouponAvailability(coupons: CouponData[]): CouponAvailability[] {
-    return coupons.map(couponData => {
+    return coupons.map((couponData) => {
       const coupon = new Coupon(couponData);
       const unavailableReason = coupon.getUnavailableReason({
         orderAmount: this.#getOrderAmount(),
@@ -127,7 +130,7 @@ export default class Order {
   }
 
   findBestCouponCodes(coupons: CouponData[]): CouponCode[] {
-    const availableCoupons = coupons.filter(coupon =>
+    const availableCoupons = coupons.filter((coupon) =>
       new Coupon(coupon).isAvailable({
         orderAmount: this.#getOrderAmount(),
         orderItems: this.orderItems,
@@ -136,14 +139,16 @@ export default class Order {
     );
     const combinations = this.#createCouponCombinations(availableCoupons);
 
-    return combinations
-      .map(selectedCoupons => ({
-        coupons: selectedCoupons,
-        totalDiscountAmount: this.calculate(selectedCoupons).price
-          .totalDiscountAmount,
-      }))
-      .sort((a, b) => b.totalDiscountAmount - a.totalDiscountAmount)[0]
-      ?.coupons.map(coupon => coupon.code) ?? [];
+    return (
+      combinations
+        .map((selectedCoupons) => ({
+          coupons: selectedCoupons,
+          totalDiscountAmount:
+            this.calculate(selectedCoupons).price.totalDiscountAmount,
+        }))
+        .sort((a, b) => b.totalDiscountAmount - a.totalDiscountAmount)[0]
+        ?.coupons.map((coupon) => coupon.code) ?? []
+    );
   }
 
   #getOrderAmount(): number {
@@ -154,11 +159,13 @@ export default class Order {
   }
 
   #calculateShippingFee(orderAmount: number): number {
-    const baseShippingFee =
-      orderAmount >= FREE_SHIPPING_MINIMUM_AMOUNT ? 0 : STANDARD_SHIPPING_FEE;
-    const remoteAreaFee = this.isRemoteArea ? REMOTE_AREA_SHIPPING_FEE : 0;
+    if (orderAmount >= FREE_SHIPPING_MINIMUM_AMOUNT) {
+      return 0;
+    }
 
-    return baseShippingFee + remoteAreaFee;
+    return (
+      STANDARD_SHIPPING_FEE + (this.isRemoteArea ? REMOTE_AREA_SHIPPING_FEE : 0)
+    );
   }
 
   #sortCouponsByApplicationOrder(coupons: CouponData[]): CouponData[] {
@@ -181,7 +188,11 @@ export default class Order {
     coupons.forEach((coupon, index) => {
       combinations.push([coupon]);
 
-      for (let nextIndex = index + 1; nextIndex < coupons.length; nextIndex += 1) {
+      for (
+        let nextIndex = index + 1;
+        nextIndex < coupons.length;
+        nextIndex += 1
+      ) {
         combinations.push([coupon, coupons[nextIndex]]);
       }
     });

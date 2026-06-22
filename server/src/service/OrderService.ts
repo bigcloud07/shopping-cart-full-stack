@@ -103,9 +103,12 @@ export default class OrderService {
       throw new ServiceError(404, "선택한 상품이 장바구니에 없습니다.");
     }
 
+    const orderedCartItems = productIds
+      ? this.#sortCartItemsByProductIds(selectedCartItems, productIds)
+      : [...selectedCartItems].sort((a, b) => a.productId - b.productId);
     const productsToLoad = [
       ...new Set(
-        selectedCartItems
+        orderedCartItems
           .filter(cartItem => cartItem.productData === undefined)
           .map(cartItem => cartItem.productId),
       ),
@@ -113,9 +116,23 @@ export default class OrderService {
     const products = await this.productRepository.findByIds(productsToLoad);
     const productById = new Map(products.map(product => [product.id, product]));
 
-    return selectedCartItems.map(cartItem =>
+    return orderedCartItems.map(cartItem =>
       this.#toOrderLine(cartItem, productById.get(cartItem.productId)),
     );
+  }
+
+  #sortCartItemsByProductIds(
+    cartItems: CartRecord[],
+    productIds: number[],
+  ): CartRecord[] {
+    const cartItemByProductId = new Map(
+      cartItems.map(cartItem => [cartItem.productId, cartItem]),
+    );
+
+    return productIds.flatMap(productId => {
+      const cartItem = cartItemByProductId.get(productId);
+      return cartItem ? [cartItem] : [];
+    });
   }
 
   #toOrderLine(

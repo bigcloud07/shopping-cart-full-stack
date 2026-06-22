@@ -46,12 +46,46 @@ describe("Order API", () => {
       expect(response.body.data.price).toEqual({
         orderAmount: 150000,
         productDiscountAmount: 0,
-        shippingFee: 3000,
+        shippingFee: 0,
         shippingDiscountAmount: 0,
         totalDiscountAmount: 0,
-        finalPaymentAmount: 153000,
+        finalPaymentAmount: 150000,
       });
       expect(response.body.data.orderItems).toHaveLength(2);
+    });
+
+    it("Success[status:201] 요청한 상품 id 순서대로 주문 상품을 반환한다.", async () => {
+      const app = createApp(createOrderTestDb());
+
+      const response = await request(app)
+        .post("/order")
+        .type("json")
+        .send({ productIds: [2, 1] })
+        .expect(201);
+
+      expect(
+        response.body.data.orderItems.map(
+          (orderItem: { productId: number }) => orderItem.productId,
+        ),
+      ).toEqual([2, 1]);
+    });
+
+    it("Success[status:201] 주문 금액이 100,000원 이상이면 도서산간 지역도 무료 배송이다.", async () => {
+      const app = createApp(createOrderTestDb());
+
+      const response = await request(app)
+        .post("/order")
+        .type("json")
+        .send({ productIds: [1], isRemoteArea: true })
+        .expect(201);
+
+      expect(response.body.data.price).toEqual(
+        expect.objectContaining({
+          orderAmount: 120000,
+          shippingFee: 0,
+          finalPaymentAmount: 120000,
+        }),
+      );
     });
   });
 
@@ -81,7 +115,7 @@ describe("Order API", () => {
       expect(freeShippingCoupon).toEqual(
         expect.objectContaining({
           isAvailable: true,
-          expectedDiscountAmount: 3000,
+          expectedDiscountAmount: 0,
         }),
       );
       expect(response.body.data.bestCouponCodes.length).toBeLessThanOrEqual(2);
@@ -109,9 +143,9 @@ describe("Order API", () => {
       expect(response.body.data.price).toEqual({
         orderAmount: 150000,
         productDiscountAmount: 5000,
-        shippingFee: 3000,
-        shippingDiscountAmount: 3000,
-        totalDiscountAmount: 8000,
+        shippingFee: 0,
+        shippingDiscountAmount: 0,
+        totalDiscountAmount: 5000,
         finalPaymentAmount: 145000,
       });
     });
