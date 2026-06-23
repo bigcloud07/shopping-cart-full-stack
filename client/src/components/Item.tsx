@@ -68,7 +68,7 @@ const QuantityButton = styled.button`
   width: 32px;
   height: 32px;
   border: 1px solid #ddd;
-  border-radius: 50%;
+  border-radius: 8px;
   background: #fff;
   cursor: pointer;
   font-size: 16px;
