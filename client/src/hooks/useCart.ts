@@ -8,8 +8,8 @@ interface UseCartReturn {
   isMutating: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  increaseQuantity: (productId: number, quantity: number) => Promise<void>;
-  decreaseQuantity: (productId: number, quantity: number) => Promise<boolean>;
+  increaseQuantity: (productId: number) => Promise<boolean>;
+  decreaseQuantity: (productId: number) => Promise<boolean>;
   removeItem: (productId: number) => Promise<void>;
 }
 
@@ -26,6 +26,9 @@ const toError = (err: unknown): Error =>
   err instanceof Error
     ? err
     : new Error("장바구니 정보를 불러오지 못했습니다.");
+
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 99;
 
 export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -70,8 +73,17 @@ export const useCart = (): UseCartReturn => {
     setError(toError(err));
   };
 
-  const increaseQuantity = async (productId: number, quantity: number) => {
-    const nextQuantity = quantity + 1;
+  const increaseQuantity = async (productId: number): Promise<boolean> => {
+    const current = cartItems.find((item) => item.productId === productId);
+    if (!current) {
+      return true;
+    }
+
+    const nextQuantity = current.quantity + 1;
+    if (nextQuantity > MAX_QUANTITY) {
+      return false;
+    }
+
     const previousCartItems = cartItems;
 
     setCartItems((prev) =>
@@ -89,16 +101,23 @@ export const useCart = (): UseCartReturn => {
       if (!res.ok) {
         throw new Error("수량 변경에 실패했습니다.");
       }
+      return true;
     } catch (err) {
       rollbackCartItems(previousCartItems, err);
+      return true;
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
     }
   };
 
-  const decreaseQuantity = async (productId: number, quantity: number) => {
-    const nextQuantity = quantity - 1;
-    if (nextQuantity < 1) {
+  const decreaseQuantity = async (productId: number): Promise<boolean> => {
+    const current = cartItems.find((item) => item.productId === productId);
+    if (!current) {
+      return true;
+    }
+
+    const nextQuantity = current.quantity - 1;
+    if (nextQuantity < MIN_QUANTITY) {
       return false;
     }
 
