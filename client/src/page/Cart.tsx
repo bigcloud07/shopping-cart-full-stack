@@ -1,5 +1,10 @@
 import { useState } from "react";
-import styled from "styled-components";
+import {
+  BottomBar,
+  CenterBox,
+  OrderButton,
+  Spacer,
+} from "../components/styled/Cart.styles";
 import { Header } from "../components/Header";
 import { ItemList } from "../components/ItemList";
 import { OrderConfirm } from "../components/OrderConfirm";
@@ -9,41 +14,6 @@ import { Title } from "../components/Title";
 import { useCart } from "../hooks/useCart";
 import { useSelectedIds } from "../hooks/useSelectedIds";
 import { useOrderCalculation } from "../hooks/useOrderCalculation";
-
-const CenterBox = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 60vh;
-  font-size: 16px;
-  color: #555;
-`;
-
-const Spacer = styled.div`
-  height: 80px;
-`;
-
-const BottomBar = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: #000;
-`;
-
-const OrderButton = styled.button<{ $disabled: boolean }>`
-  width: 100%;
-  padding: 20px;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
-  opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
-`;
 
 export const Cart = () => {
   const {

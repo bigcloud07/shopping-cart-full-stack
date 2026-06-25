@@ -1,14 +1,5 @@
-import styled from "styled-components";
 import type { ReactNode } from "react";
-
-const TitleWrapper = styled.div`
-  padding: 24px 20px 8px;
-`;
-
-const H1 = styled.h1`
-  font-size: 24px;
-  font-weight: bold;
-`;
+import { H1, TitleWrapper } from "./styled/Title.styles";
 
 interface TitleProps {
   children?: ReactNode;

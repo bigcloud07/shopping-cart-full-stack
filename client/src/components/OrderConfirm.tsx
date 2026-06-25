@@ -1,5 +1,42 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import styled from "styled-components";
+import {
+  BottomBar,
+  CenterMessage,
+  Checkbox,
+  CheckLabel,
+  CloseButton,
+  CompleteAmount,
+  CompleteAmountLabel,
+  CompleteDescription,
+  CompleteTitle,
+  CouponButton,
+  CouponGuide,
+  CouponItem,
+  CouponList,
+  CouponMeta,
+  CouponName,
+  Description,
+  InfoText,
+  ItemList,
+  ItemRow,
+  Modal,
+  ModalApplyButton,
+  ModalHeader,
+  ModalTitle,
+  NegativeAmount,
+  Overlay,
+  Page,
+  PriceRow,
+  PriceRows,
+  PrimaryButton,
+  ProductImage,
+  ProductInfo,
+  ProductName,
+  ProductPrice,
+  ProductQuantity,
+  Section,
+  SectionTitle,
+} from "./styled/OrderConfirm.styles";
 import {
   requestApplyCoupons,
   requestCoupons,
@@ -22,279 +59,6 @@ import {
 } from "../utils/orderSummary";
 
 const MAX_COUPON_COUNT = 2;
-
-const Page = styled.div`
-  padding: 0 20px 96px;
-`;
-
-const Description = styled.p`
-  margin-top: 8px;
-  font-size: 13px;
-  color: #222;
-  line-height: 1.5;
-`;
-
-const Section = styled.section`
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid #eee;
-`;
-
-const SectionTitle = styled.h2`
-  margin-bottom: 12px;
-  font-size: 16px;
-  font-weight: 700;
-`;
-
-const ItemList = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-`;
-
-const ItemRow = styled.li`
-  display: flex;
-  gap: 16px;
-  list-style: none;
-`;
-
-const ProductImage = styled.img`
-  width: 112px;
-  height: 112px;
-  border-radius: 4px;
-  object-fit: cover;
-  background: #f4f4f4;
-`;
-
-const ProductInfo = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-`;
-
-const ProductName = styled.p`
-  margin-bottom: 4px;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  font-weight: 600;
-  color: #444;
-`;
-
-const ProductPrice = styled.p`
-  margin-bottom: 14px;
-  font-size: 22px;
-  font-weight: 800;
-`;
-
-const ProductQuantity = styled.p`
-  font-size: 13px;
-  font-weight: 700;
-`;
-
-const CouponButton = styled.button`
-  width: 100%;
-  height: 48px;
-  margin-top: 18px;
-  border: 1px solid #d8d8d8;
-  border-radius: 4px;
-  background: #fff;
-  color: #333;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-`;
-
-const CheckLabel = styled.label`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-`;
-
-const Checkbox = styled.input`
-  width: 18px;
-  height: 18px;
-  accent-color: #000;
-`;
-
-const InfoText = styled.p`
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-  font-size: 12px;
-  color: #333;
-`;
-
-const PriceRows = styled.div`
-  margin-top: 10px;
-`;
-
-const PriceRow = styled.div<{ $strong?: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
-  border-bottom: ${({ $strong }) => ($strong ? "none" : "1px solid #f2f2f2")};
-  font-size: ${({ $strong }) => ($strong ? "17px" : "15px")};
-  font-weight: ${({ $strong }) => ($strong ? 800 : 700)};
-`;
-
-const NegativeAmount = styled.span`
-  color: #000;
-`;
-
-const BottomBar = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  z-index: 20;
-  width: 100%;
-  max-width: 480px;
-  transform: translateX(-50%);
-  background: #000;
-`;
-
-const PrimaryButton = styled.button`
-  width: 100%;
-  padding: 20px;
-  border: none;
-  background: none;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.45;
-  }
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgb(0 0 0 / 35%);
-`;
-
-const Modal = styled.div`
-  width: min(100%, 360px);
-  max-height: min(620px, calc(100vh - 48px));
-  overflow-y: auto;
-  border-radius: 8px;
-  background: #fff;
-  padding: 22px 28px;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-`;
-
-const ModalTitle = styled.h2`
-  font-size: 16px;
-  font-weight: 800;
-`;
-
-const CloseButton = styled.button`
-  border: none;
-  background: none;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-`;
-
-const CouponGuide = styled.p`
-  margin-top: 22px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
-  font-size: 12px;
-`;
-
-const CouponList = styled.ul`
-  display: flex;
-  flex-direction: column;
-`;
-
-const CouponItem = styled.li<{ $disabled: boolean }>`
-  padding: 16px 0;
-  border-bottom: 1px solid #eee;
-  list-style: none;
-  color: ${({ $disabled }) => ($disabled ? "#bdbdbd" : "#000")};
-`;
-
-const CouponName = styled.span`
-  font-size: 14px;
-  font-weight: 800;
-`;
-
-const CouponMeta = styled.p`
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.5;
-`;
-
-const ModalApplyButton = styled.button`
-  width: 100%;
-  height: 48px;
-  margin-top: 20px;
-  border: none;
-  border-radius: 4px;
-  background: #333;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-`;
-
-const CenterMessage = styled.div`
-  display: flex;
-  min-height: 58vh;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px;
-  text-align: center;
-`;
-
-const CompleteTitle = styled.h2`
-  font-size: 22px;
-  font-weight: 800;
-`;
-
-const CompleteDescription = styled.p`
-  margin-top: 28px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.6;
-`;
-
-const CompleteAmountLabel = styled.p`
-  margin-top: 28px;
-  font-size: 15px;
-  font-weight: 800;
-`;
-
-const CompleteAmount = styled.p`
-  margin-top: 8px;
-  font-size: 24px;
-  font-weight: 900;
-`;
 
 const formatWon = (amount: number) => `${amount.toLocaleString()}원`;
 
@@ -662,7 +426,9 @@ export const OrderConfirm = ({
             </PriceRow>
             <PriceRow>
               <span>쿠폰 할인 금액</span>
-              <NegativeAmount>-{formatWon(totalDiscountAmount)}</NegativeAmount>
+              <NegativeAmount>
+                -{formatWon(totalDiscountAmount)}
+              </NegativeAmount>
             </PriceRow>
             <PriceRow>
               <span>배송비</span>
@@ -722,7 +488,9 @@ export const OrderConfirm = ({
                           disabled={!coupon.isAvailable}
                           onChange={() => toggleCoupon(coupon)}
                         />
-                        <CouponName>{coupon.coupon.description}</CouponName>
+                        <CouponName>
+                          {coupon.coupon.description}
+                        </CouponName>
                       </CheckLabel>
                       <CouponMeta>
                         만료일: {coupon.coupon.expirationDate}
