@@ -11,17 +11,6 @@ import type { ProductRepository } from "../Repository/ProductRepository.js";
 import type { CouponRepository } from "../Repository/CouponRepository.js";
 import ServiceError from "./ServiceError.js";
 
-const MAX_SELECTED_COUPON_COUNT = 2;
-
-export interface OrderRequest {
-  productIds?: unknown;
-  isRemoteArea?: unknown;
-}
-
-export interface ApplyCouponRequest extends OrderRequest {
-  couponCodes?: unknown;
-}
-
 export interface CouponListResponse {
   coupons: CouponAvailability[];
   bestCouponCodes: CouponCode[];
@@ -34,13 +23,19 @@ export default class OrderService {
     private readonly couponRepository: CouponRepository,
   ) {}
 
-  async createOrder(request: OrderRequest): Promise<OrderSummary> {
-    const order = await this.#createOrderModel(request);
+  async createOrder(
+    productIds: number[],
+    isRemoteArea: boolean,
+  ): Promise<OrderSummary> {
+    const order = await this.#createOrderModel(productIds, isRemoteArea);
     return order.calculate();
   }
 
-  async getCoupons(request: OrderRequest): Promise<CouponListResponse> {
-    const order = await this.#createOrderModel(request);
+  async getCoupons(
+    productIds: number[],
+    isRemoteArea: boolean,
+  ): Promise<CouponListResponse> {
+    const order = await this.#createOrderModel(productIds, isRemoteArea);
     const coupons = await this.couponRepository.findAll();
 
     return {
@@ -49,9 +44,12 @@ export default class OrderService {
     };
   }
 
-  async applyCoupons(request: ApplyCouponRequest): Promise<OrderSummary> {
-    const selectedCouponCodes = this.#parseCouponCodes(request.couponCodes);
-    const order = await this.#createOrderModel(request);
+  async applyCoupons(
+    productIds: number[],
+    isRemoteArea: boolean,
+    selectedCouponCodes: CouponCode[],
+  ): Promise<OrderSummary> {
+    const order = await this.#createOrderModel(productIds, isRemoteArea);
     const coupons = await this.couponRepository.findAll();
     const selectedCoupons =
       this.#findSelectedCoupons(coupons, selectedCouponCodes);
@@ -81,9 +79,10 @@ export default class OrderService {
     };
   }
 
-  async #createOrderModel(request: OrderRequest): Promise<Order> {
-    const productIds = this.#parseProductIds(request.productIds);
-    const isRemoteArea = this.#parseBoolean(request.isRemoteArea);
+  async #createOrderModel(
+    productIds: number[],
+    isRemoteArea: boolean,
+  ): Promise<Order> {
     const orderItems = await this.#getOrderItems(productIds);
 
     if (orderItems.length === 0) {
@@ -93,17 +92,18 @@ export default class OrderService {
     return new Order(orderItems, isRemoteArea);
   }
 
-  async #getOrderItems(productIds: number[] | null): Promise<OrderLine[]> {
+  async #getOrderItems(productIds: number[]): Promise<OrderLine[]> {
     const cartItems = await this.cartRepository.findAll();
-    const selectedCartItems = productIds
+    const hasSelectedProductIds = productIds.length > 0;
+    const selectedCartItems = hasSelectedProductIds
       ? cartItems.filter(cartItem => productIds.includes(cartItem.productId))
       : cartItems;
 
-    if (productIds && selectedCartItems.length !== productIds.length) {
+    if (hasSelectedProductIds && selectedCartItems.length !== productIds.length) {
       throw new ServiceError(404, "선택한 상품이 장바구니에 없습니다.");
     }
 
-    const orderedCartItems = productIds
+    const orderedCartItems = hasSelectedProductIds
       ? this.#sortCartItemsByProductIds(selectedCartItems, productIds)
       : [...selectedCartItems].sort((a, b) => a.productId - b.productId);
     const productsToLoad = [
@@ -153,48 +153,6 @@ export default class OrderService {
       quantity: cartItem.quantity,
       lineAmount: productData.price * cartItem.quantity,
     };
-  }
-
-  #parseProductIds(productIds: unknown): number[] | null {
-    if (productIds === undefined || productIds === null || productIds === "") {
-      return null;
-    }
-
-    const values = Array.isArray(productIds) ? productIds : String(productIds).split(",");
-    const parsedProductIds = values.map(value => Number(value));
-
-    if (
-      parsedProductIds.some(
-        productId => !Number.isInteger(productId) || productId < 1,
-      )
-    ) {
-      throw new ServiceError(400, "상품 id 형식이 유효하지 않습니다.");
-    }
-
-    return [...new Set(parsedProductIds)];
-  }
-
-  #parseCouponCodes(couponCodes: unknown): CouponCode[] {
-    if (couponCodes === undefined || couponCodes === null || couponCodes === "") {
-      return [];
-    }
-
-    const values = Array.isArray(couponCodes)
-      ? couponCodes
-      : String(couponCodes).split(",");
-    const parsedCouponCodes = [
-      ...new Set(values.map(value => String(value).trim())),
-    ] as CouponCode[];
-
-    if (parsedCouponCodes.length > MAX_SELECTED_COUPON_COUNT) {
-      throw new ServiceError(400, "쿠폰은 최대 2개까지 선택할 수 있습니다.");
-    }
-
-    return parsedCouponCodes;
-  }
-
-  #parseBoolean(value: unknown): boolean {
-    return value === true || value === "true";
   }
 
   #sortByRequestedOrder(

@@ -87,6 +87,21 @@ describe("Order API", () => {
         }),
       );
     });
+
+    it("Error[status:400] 도서산간 지역 여부 형식이 유효하지 않으면 주문을 생성하지 않는다.", async () => {
+      const app = createApp(createOrderTestDb());
+
+      const response = await request(app)
+        .post("/order")
+        .type("json")
+        .send({ productIds: [1], isRemoteArea: "invalid" })
+        .expect(400);
+
+      expect(response.body).toEqual({
+        result: "error",
+        message: "요청 값이 올바르지 않습니다.",
+      });
+    });
   });
 
   describe("GET /coupon", () => {
