@@ -37,16 +37,26 @@ export const Cart = () => {
   } = useOrderCalculation(cartItems, selectedIds);
 
   const onPlus = async (productId: number) => {
-    const success = await increaseQuantity(productId);
-    if (!success) {
+    const result = await increaseQuantity(productId);
+    if (result.status === "blocked" && result.reason === "MAX_QUANTITY") {
       alert("수량은 최대 99개까지 가능합니다.");
+      return;
+    }
+
+    if (result.status === "failed") {
+      alert("수량 변경에 실패했습니다.");
     }
   };
 
   const onMinus = async (productId: number) => {
-    const success = await decreaseQuantity(productId);
-    if (!success) {
+    const result = await decreaseQuantity(productId);
+    if (result.status === "blocked" && result.reason === "MIN_QUANTITY") {
       alert("수량은 1개 이상부터 가능합니다.");
+      return;
+    }
+
+    if (result.status === "failed") {
+      alert("수량 변경에 실패했습니다.");
     }
   };
 

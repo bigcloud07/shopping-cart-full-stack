@@ -8,10 +8,15 @@ interface UseCartReturn {
   isMutating: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  increaseQuantity: (productId: number) => Promise<boolean>;
-  decreaseQuantity: (productId: number) => Promise<boolean>;
+  increaseQuantity: (productId: number) => Promise<QuantityChangeResult>;
+  decreaseQuantity: (productId: number) => Promise<QuantityChangeResult>;
   removeItem: (productId: number) => Promise<void>;
 }
+
+type QuantityChangeResult =
+  | { status: "success" }
+  | { status: "blocked"; reason: "MIN_QUANTITY" | "MAX_QUANTITY" }
+  | { status: "failed" };
 
 const requestCartItems = async (): Promise<CartItem[]> => {
   const response = await fetch(`${API_URL}/cart`);
@@ -73,15 +78,17 @@ export const useCart = (): UseCartReturn => {
     setError(toError(err));
   };
 
-  const increaseQuantity = async (productId: number): Promise<boolean> => {
+  const increaseQuantity = async (
+    productId: number,
+  ): Promise<QuantityChangeResult> => {
     const current = cartItems.find((item) => item.productId === productId);
     if (!current) {
-      return true;
+      return { status: "success" };
     }
 
     const nextQuantity = current.quantity + 1;
     if (nextQuantity > MAX_QUANTITY) {
-      return false;
+      return { status: "blocked", reason: "MAX_QUANTITY" };
     }
 
     const previousCartItems = cartItems;
@@ -101,24 +108,26 @@ export const useCart = (): UseCartReturn => {
       if (!res.ok) {
         throw new Error("수량 변경에 실패했습니다.");
       }
-      return true;
+      return { status: "success" };
     } catch (err) {
       rollbackCartItems(previousCartItems, err);
-      return true;
+      return { status: "failed" };
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
     }
   };
 
-  const decreaseQuantity = async (productId: number): Promise<boolean> => {
+  const decreaseQuantity = async (
+    productId: number,
+  ): Promise<QuantityChangeResult> => {
     const current = cartItems.find((item) => item.productId === productId);
     if (!current) {
-      return true;
+      return { status: "success" };
     }
 
     const nextQuantity = current.quantity - 1;
     if (nextQuantity < MIN_QUANTITY) {
-      return false;
+      return { status: "blocked", reason: "MIN_QUANTITY" };
     }
 
     const previousCartItems = cartItems;
@@ -135,17 +144,13 @@ export const useCart = (): UseCartReturn => {
 
     try {
       const res = await patchQuantity(productId, nextQuantity);
-      if (res.status === 400) {
-        setCartItems(previousCartItems);
-        return false;
-      }
       if (!res.ok) {
         throw new Error("수량 변경에 실패했습니다.");
       }
-      return true;
+      return { status: "success" };
     } catch (err) {
       rollbackCartItems(previousCartItems, err);
-      return true;
+      return { status: "failed" };
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
     }
