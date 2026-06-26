@@ -23,6 +23,7 @@ const hasSameCouponCodes = (
 interface UseCouponSelectionParams {
   items: CartItem[];
   isRemoteArea: boolean;
+  selectedCouponCodes: CouponCode[];
   onApplySuccess: (summary: OrderSummaryData) => void;
   onError: (message: string) => void;
 }
@@ -30,7 +31,6 @@ interface UseCouponSelectionParams {
 interface UseCouponSelectionReturn {
   coupons: CouponAvailability[];
   draftCouponCodes: CouponCode[];
-  appliedCouponCodes: CouponCode[];
   selectedCouponDiscount: number;
   isCouponModalOpen: boolean;
   isLoadingCoupons: boolean;
@@ -38,38 +38,38 @@ interface UseCouponSelectionReturn {
   closeCouponModal: () => void;
   toggleCoupon: (coupon: CouponAvailability) => void;
   applyCoupons: () => Promise<void>;
-  resetDraftToApplied: () => void;
+  resetDraftToSelected: () => void;
 }
 
 export const useCouponSelection = ({
   items,
   isRemoteArea,
+  selectedCouponCodes,
   onApplySuccess,
   onError,
 }: UseCouponSelectionParams): UseCouponSelectionReturn => {
   const [coupons, setCoupons] = useState<CouponAvailability[]>([]);
-  const [recommendedCouponCodes, setRecommendedCouponCodes] = useState<
-    CouponCode[]
-  >([]);
   const [draftCouponCodes, setDraftCouponCodes] = useState<CouponCode[]>([]);
-  const [appliedCouponCodes, setAppliedCouponCodes] = useState<CouponCode[]>(
-    [],
-  );
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(false);
   const couponRequestIdRef = useRef(0);
   const isCouponModalOpenRef = useRef(false);
+  const selectedCouponCodesRef = useRef(selectedCouponCodes);
+  const recommendedCouponCodesRef = useRef<CouponCode[]>([]);
 
   useEffect(() => {
     isCouponModalOpenRef.current = isCouponModalOpen;
   }, [isCouponModalOpen]);
 
   const getBaseCouponCodes = useCallback(
-    (nextRecommendedCouponCodes = recommendedCouponCodes) =>
-      appliedCouponCodes.length > 0
-        ? appliedCouponCodes
-        : nextRecommendedCouponCodes,
-    [appliedCouponCodes, recommendedCouponCodes],
+    (nextRecommendedCouponCodes = recommendedCouponCodesRef.current) => {
+      const currentSelectedCouponCodes = selectedCouponCodesRef.current;
+
+      return currentSelectedCouponCodes.length > 0
+        ? currentSelectedCouponCodes
+        : nextRecommendedCouponCodes;
+    },
+    [],
   );
 
   const syncDraftCouponCodes = useCallback((nextCouponCodes: CouponCode[]) => {
@@ -86,6 +86,11 @@ export const useCouponSelection = ({
     });
   }, []);
 
+  useEffect(() => {
+    selectedCouponCodesRef.current = selectedCouponCodes;
+    syncDraftCouponCodes(getBaseCouponCodes());
+  }, [getBaseCouponCodes, selectedCouponCodes, syncDraftCouponCodes]);
+
   const loadCoupons = useCallback(
     async (showLoading = false, syncWhileModalOpen = false) => {
       const requestId = couponRequestIdRef.current + 1;
@@ -100,8 +105,8 @@ export const useCouponSelection = ({
 
         if (couponRequestIdRef.current !== requestId) return;
 
+        recommendedCouponCodesRef.current = couponData.bestCouponCodes;
         setCoupons(couponData.coupons);
-        setRecommendedCouponCodes(couponData.bestCouponCodes);
 
         const nextCouponCodes = getBaseCouponCodes(couponData.bestCouponCodes);
         if (syncWhileModalOpen) {
@@ -137,8 +142,8 @@ export const useCouponSelection = ({
 
         if (ignore || couponRequestIdRef.current !== requestId) return;
 
+        recommendedCouponCodesRef.current = couponData.bestCouponCodes;
         setCoupons(couponData.coupons);
-        setRecommendedCouponCodes(couponData.bestCouponCodes);
         syncDraftCouponCodes(getBaseCouponCodes(couponData.bestCouponCodes));
       } catch (error) {
         if (ignore || couponRequestIdRef.current !== requestId) return;
@@ -208,7 +213,6 @@ export const useCouponSelection = ({
         draftCouponCodes,
       );
       onApplySuccess(nextSummary);
-      setAppliedCouponCodes(nextSummary.selectedCouponCodes);
       setDraftCouponCodes(nextSummary.selectedCouponCodes);
     } catch (error) {
       onError(
@@ -219,14 +223,13 @@ export const useCouponSelection = ({
     }
   };
 
-  const resetDraftToApplied = () => {
-    setDraftCouponCodes(appliedCouponCodes);
+  const resetDraftToSelected = () => {
+    setDraftCouponCodes(selectedCouponCodesRef.current);
   };
 
   return {
     coupons,
     draftCouponCodes,
-    appliedCouponCodes,
     selectedCouponDiscount,
     isCouponModalOpen,
     isLoadingCoupons,
@@ -234,6 +237,6 @@ export const useCouponSelection = ({
     closeCouponModal,
     toggleCoupon,
     applyCoupons,
-    resetDraftToApplied,
+    resetDraftToSelected,
   };
 };

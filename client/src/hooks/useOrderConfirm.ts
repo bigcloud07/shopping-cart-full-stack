@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { requestApplyCoupons, requestOrderSummary } from "../api/orderApi";
 import type {
   CartItem,
@@ -46,6 +46,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
   );
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const selectedCouponCodesRef = useRef<CouponCode[]>([]);
   const applySummary = useCallback(
     (nextSummary: OrderSummaryData) => {
       setSummary(alignSummaryItemOrder(nextSummary, items));
@@ -55,7 +56,6 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
   const {
     coupons,
     draftCouponCodes,
-    appliedCouponCodes,
     selectedCouponDiscount,
     isCouponModalOpen,
     isLoadingCoupons,
@@ -63,21 +63,27 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
     closeCouponModal,
     toggleCoupon,
     applyCoupons,
-    resetDraftToApplied,
+    resetDraftToSelected,
   } = useCouponSelection({
     items,
     isRemoteArea,
+    selectedCouponCodes: summary.selectedCouponCodes,
     onApplySuccess: applySummary,
     onError: setErrorMessage,
   });
 
   useEffect(() => {
+    selectedCouponCodesRef.current = summary.selectedCouponCodes;
+  }, [summary.selectedCouponCodes]);
+
+  useEffect(() => {
     let ignore = false;
 
     const loadOrder = async () => {
+      const selectedCouponCodes = selectedCouponCodesRef.current;
       const fallbackSummary = buildFallbackSummary(items, isRemoteArea);
       setSummary((prev) =>
-        appliedCouponCodes.length > 0
+        selectedCouponCodes.length > 0
           ? { ...prev, isRemoteArea }
           : fallbackSummary,
       );
@@ -85,8 +91,8 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
       setErrorMessage("");
       try {
         const nextSummary =
-          appliedCouponCodes.length > 0
-            ? await requestApplyCoupons(items, isRemoteArea, appliedCouponCodes)
+          selectedCouponCodes.length > 0
+            ? await requestApplyCoupons(items, isRemoteArea, selectedCouponCodes)
             : await requestOrderSummary(items, isRemoteArea);
         if (!ignore) {
           applySummary(nextSummary);
@@ -94,7 +100,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
       } catch (error) {
         if (!ignore) {
           setSummary((prev) =>
-            appliedCouponCodes.length > 0
+            selectedCouponCodes.length > 0
               ? { ...prev, isRemoteArea }
               : buildFallbackSummary(items, isRemoteArea),
           );
@@ -116,13 +122,14 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
     return () => {
       ignore = true;
     };
-  }, [items, isRemoteArea, appliedCouponCodes, applySummary]);
+  }, [items, isRemoteArea, applySummary]);
 
   const changeRemoteArea = (nextIsRemoteArea: boolean) => {
+    const selectedCouponCodes = selectedCouponCodesRef.current;
     setIsRemoteArea(nextIsRemoteArea);
-    resetDraftToApplied();
+    resetDraftToSelected();
     setSummary((prev) =>
-      appliedCouponCodes.length > 0
+      selectedCouponCodes.length > 0
         ? { ...prev, isRemoteArea: nextIsRemoteArea }
         : buildFallbackSummary(items, nextIsRemoteArea),
     );
