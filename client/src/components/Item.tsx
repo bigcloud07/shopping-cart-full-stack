@@ -7,6 +7,7 @@ import {
   ProductInfo,
   ProductName,
   ProductPrice,
+  QuantityError,
   QuantityButton,
   QuantityDisplay,
   QuantityRow,
@@ -18,9 +19,10 @@ import { useCartItemActions } from "../context/CartItemActionsContext";
 interface ItemProps {
   item: CartItem;
   isSelected: boolean;
+  mutationErrorMessage?: string;
 }
 
-export const Item = ({ item, isSelected }: ItemProps) => {
+export const Item = ({ item, isSelected, mutationErrorMessage }: ItemProps) => {
   const { onPlus, onMinus, onSelectItem, onDelete } = useCartItemActions();
   return (
     <ItemWrapper>
@@ -53,6 +55,9 @@ export const Item = ({ item, isSelected }: ItemProps) => {
               +
             </QuantityButton>
           </QuantityRow>
+          {mutationErrorMessage && (
+            <QuantityError role="alert">{mutationErrorMessage}</QuantityError>
+          )}
         </ProductInfo>
       </ContentRow>
     </ItemWrapper>

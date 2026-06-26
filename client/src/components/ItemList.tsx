@@ -9,11 +9,17 @@ import type { CartItem } from "../type/type";
 import { Item } from "./Item";
 import { CartItemActionsContext } from "../context/CartItemActionsContext";
 
+interface ItemMutationError {
+  productId: number;
+  message: string;
+}
+
 interface ItemListProps {
   items: Array<CartItem>;
   onPlus: (productId: number) => Promise<void>;
   onMinus: (productId: number) => Promise<void>;
   selectedIds: Set<number>;
+  mutationError: ItemMutationError | null;
   onSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectItem: (productId: number) => void;
   onDelete: (productId: number) => void;
@@ -27,6 +33,7 @@ export const ItemList = ({
   onSelectAll,
   onDelete,
   selectedIds,
+  mutationError,
 }: ItemListProps) => {
   return (
     <div>
@@ -48,6 +55,11 @@ export const ItemList = ({
               key={item.productId}
               item={item}
               isSelected={selectedIds.has(item.productId)}
+              mutationErrorMessage={
+                mutationError?.productId === item.productId
+                  ? mutationError.message
+                  : undefined
+              }
             />
           ))}
         </List>

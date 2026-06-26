@@ -70,7 +70,7 @@ describe("Cart 컴포넌트 - 수량 경계값", () => {
     expect((fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchCallCount);
   });
 
-  test("수량 변경 요청이 실패하면 경계값 알림이 아닌 실패 alert가 뜬다", async () => {
+  test("수량 변경 요청이 실패하면 장바구니를 유지하고 실패 토스트를 보여준다", async () => {
     const cartItem = {
       productId: 1,
       productName: "상품 A",
@@ -95,7 +95,14 @@ describe("Cart 컴포넌트 - 수량 경계값", () => {
 
     await userEvent.click(screen.getByText("−"));
 
-    expect(alertMock).toHaveBeenCalledWith("수량 변경에 실패했습니다.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "수량 변경에 실패했습니다.",
+    );
+    expect(screen.getByText("상품 A")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(
+      screen.queryByText("장바구니를 불러오지 못했습니다."),
+    ).not.toBeInTheDocument();
     expect(alertMock).not.toHaveBeenCalledWith(
       "수량은 1개 이상부터 가능합니다.",
     );

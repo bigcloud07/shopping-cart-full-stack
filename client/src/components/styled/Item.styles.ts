@@ -77,3 +77,10 @@ export const QuantityDisplay = styled.span`
   min-width: 20px;
   text-align: center;
 `;
+
+export const QuantityError = styled.p`
+  margin-top: 8px;
+  color: #d02b2b;
+  font-size: 12px;
+  font-weight: 600;
+`;

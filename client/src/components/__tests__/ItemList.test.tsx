@@ -17,6 +17,7 @@ const mockProps = {
   onSelectItem: vi.fn(),
   onDelete: vi.fn(),
   selectedIds: new Set<number>(),
+  mutationError: null,
 };
 
 beforeEach(() => {

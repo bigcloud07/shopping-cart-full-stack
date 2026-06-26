@@ -19,7 +19,8 @@ export const Cart = () => {
   const {
     cartItems,
     isLoading,
-    error,
+    loadError,
+    mutationError,
     increaseQuantity,
     decreaseQuantity,
     removeItem,
@@ -42,10 +43,6 @@ export const Cart = () => {
       alert("수량은 최대 99개까지 가능합니다.");
       return;
     }
-
-    if (result.status === "failed") {
-      alert("수량 변경에 실패했습니다.");
-    }
   };
 
   const onMinus = async (productId: number) => {
@@ -53,10 +50,6 @@ export const Cart = () => {
     if (result.status === "blocked" && result.reason === "MIN_QUANTITY") {
       alert("수량은 1개 이상부터 가능합니다.");
       return;
-    }
-
-    if (result.status === "failed") {
-      alert("수량 변경에 실패했습니다.");
     }
   };
 
@@ -77,7 +70,7 @@ export const Cart = () => {
     );
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <>
         <Header />
@@ -117,6 +110,7 @@ export const Cart = () => {
             onPlus={onPlus}
             onMinus={onMinus}
             selectedIds={selectedIds}
+            mutationError={mutationError}
             onSelectAll={onSelectAll}
             onSelectItem={onSelectItem}
             onDelete={onDelete}

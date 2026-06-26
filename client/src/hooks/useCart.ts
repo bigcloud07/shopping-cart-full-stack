@@ -6,7 +6,8 @@ interface UseCartReturn {
   cartItems: CartItem[];
   isLoading: boolean;
   isMutating: boolean;
-  error: Error | null;
+  loadError: Error | null;
+  mutationError: CartMutationError | null;
   refetch: () => Promise<void>;
   increaseQuantity: (productId: number) => Promise<QuantityChangeResult>;
   decreaseQuantity: (productId: number) => Promise<QuantityChangeResult>;
@@ -17,6 +18,11 @@ type QuantityChangeResult =
   | { status: "success" }
   | { status: "blocked"; reason: "MIN_QUANTITY" | "MAX_QUANTITY" }
   | { status: "failed" };
+
+interface CartMutationError {
+  productId: number;
+  message: string;
+}
 
 const requestCartItems = async (): Promise<CartItem[]> => {
   const response = await fetch(`${API_URL}/cart`);
@@ -39,14 +45,16 @@ export const useCart = (): UseCartReturn => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingMutationCount, setPendingMutationCount] = useState(0);
-  const [error, setError] = useState<Error | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [mutationError, setMutationError] =
+    useState<CartMutationError | null>(null);
 
   const refetch = async () => {
     try {
       setCartItems(await requestCartItems());
-      setError(null);
+      setLoadError(null);
     } catch (err) {
-      setError(toError(err));
+      setLoadError(toError(err));
     }
   };
 
@@ -55,9 +63,9 @@ export const useCart = (): UseCartReturn => {
       setIsLoading(true);
       try {
         setCartItems(await requestCartItems());
-        setError(null);
+        setLoadError(null);
       } catch (err) {
-        setError(toError(err));
+        setLoadError(toError(err));
       } finally {
         setIsLoading(false);
       }
@@ -73,9 +81,13 @@ export const useCart = (): UseCartReturn => {
     });
   };
 
-  const rollbackCartItems = (previousCartItems: CartItem[], err: unknown) => {
+  const rollbackCartItems = (
+    previousCartItems: CartItem[],
+    productId: number,
+    message: string,
+  ) => {
     setCartItems(previousCartItems);
-    setError(toError(err));
+    setMutationError({ productId, message });
   };
 
   const increaseQuantity = async (
@@ -101,7 +113,7 @@ export const useCart = (): UseCartReturn => {
       ),
     );
     setPendingMutationCount((count) => count + 1);
-    setError(null);
+    setMutationError(null);
 
     try {
       const res = await patchQuantity(productId, nextQuantity);
@@ -109,8 +121,12 @@ export const useCart = (): UseCartReturn => {
         throw new Error("수량 변경에 실패했습니다.");
       }
       return { status: "success" };
-    } catch (err) {
-      rollbackCartItems(previousCartItems, err);
+    } catch {
+      rollbackCartItems(
+        previousCartItems,
+        productId,
+        "수량 변경에 실패했습니다.",
+      );
       return { status: "failed" };
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
@@ -140,7 +156,7 @@ export const useCart = (): UseCartReturn => {
       ),
     );
     setPendingMutationCount((count) => count + 1);
-    setError(null);
+    setMutationError(null);
 
     try {
       const res = await patchQuantity(productId, nextQuantity);
@@ -148,8 +164,12 @@ export const useCart = (): UseCartReturn => {
         throw new Error("수량 변경에 실패했습니다.");
       }
       return { status: "success" };
-    } catch (err) {
-      rollbackCartItems(previousCartItems, err);
+    } catch {
+      rollbackCartItems(
+        previousCartItems,
+        productId,
+        "수량 변경에 실패했습니다.",
+      );
       return { status: "failed" };
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
@@ -161,7 +181,7 @@ export const useCart = (): UseCartReturn => {
 
     setCartItems((prev) => prev.filter((item) => item.productId !== productId));
     setPendingMutationCount((count) => count + 1);
-    setError(null);
+    setMutationError(null);
 
     try {
       const res = await fetch(`${API_URL}/cart/${productId}`, {
@@ -170,8 +190,8 @@ export const useCart = (): UseCartReturn => {
       if (!res.ok) {
         throw new Error("상품 삭제에 실패했습니다.");
       }
-    } catch (err) {
-      rollbackCartItems(previousCartItems, err);
+    } catch {
+      rollbackCartItems(previousCartItems, productId, "상품 삭제에 실패했습니다.");
     } finally {
       setPendingMutationCount((count) => Math.max(0, count - 1));
     }
@@ -181,7 +201,8 @@ export const useCart = (): UseCartReturn => {
     cartItems,
     isLoading,
     isMutating: pendingMutationCount > 0,
-    error,
+    loadError,
+    mutationError,
     refetch,
     increaseQuantity,
     decreaseQuantity,
