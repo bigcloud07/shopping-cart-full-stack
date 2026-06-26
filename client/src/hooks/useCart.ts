@@ -90,6 +90,41 @@ export const useCart = (): UseCartReturn => {
     setMutationError({ productId, message });
   };
 
+  const optimisticMutate = async <T,>({
+    productId,
+    applyOptimisticUpdate,
+    request,
+    rollbackMessage,
+    onSuccess,
+    onFailure,
+  }: {
+    productId: number;
+    applyOptimisticUpdate: (items: CartItem[]) => CartItem[];
+    request: () => Promise<Response>;
+    rollbackMessage: string;
+    onSuccess: () => T;
+    onFailure: () => T;
+  }): Promise<T> => {
+    const previousCartItems = cartItems;
+
+    setCartItems(applyOptimisticUpdate);
+    setPendingMutationCount((count) => count + 1);
+    setMutationError(null);
+
+    try {
+      const res = await request();
+      if (!res.ok) {
+        throw new Error(rollbackMessage);
+      }
+      return onSuccess();
+    } catch {
+      rollbackCartItems(previousCartItems, productId, rollbackMessage);
+      return onFailure();
+    } finally {
+      setPendingMutationCount((count) => Math.max(0, count - 1));
+    }
+  };
+
   const increaseQuantity = async (
     productId: number,
   ): Promise<QuantityChangeResult> => {
@@ -103,34 +138,19 @@ export const useCart = (): UseCartReturn => {
       return { status: "blocked", reason: "MAX_QUANTITY" };
     }
 
-    const previousCartItems = cartItems;
-
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: nextQuantity }
-          : item,
-      ),
-    );
-    setPendingMutationCount((count) => count + 1);
-    setMutationError(null);
-
-    try {
-      const res = await patchQuantity(productId, nextQuantity);
-      if (!res.ok) {
-        throw new Error("수량 변경에 실패했습니다.");
-      }
-      return { status: "success" };
-    } catch {
-      rollbackCartItems(
-        previousCartItems,
-        productId,
-        "수량 변경에 실패했습니다.",
-      );
-      return { status: "failed" };
-    } finally {
-      setPendingMutationCount((count) => Math.max(0, count - 1));
-    }
+    return optimisticMutate<QuantityChangeResult>({
+      productId,
+      applyOptimisticUpdate: (items) =>
+        items.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: nextQuantity }
+            : item,
+        ),
+      request: () => patchQuantity(productId, nextQuantity),
+      rollbackMessage: "수량 변경에 실패했습니다.",
+      onSuccess: () => ({ status: "success" }),
+      onFailure: () => ({ status: "failed" }),
+    });
   };
 
   const decreaseQuantity = async (
@@ -146,55 +166,34 @@ export const useCart = (): UseCartReturn => {
       return { status: "blocked", reason: "MIN_QUANTITY" };
     }
 
-    const previousCartItems = cartItems;
-
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: nextQuantity }
-          : item,
-      ),
-    );
-    setPendingMutationCount((count) => count + 1);
-    setMutationError(null);
-
-    try {
-      const res = await patchQuantity(productId, nextQuantity);
-      if (!res.ok) {
-        throw new Error("수량 변경에 실패했습니다.");
-      }
-      return { status: "success" };
-    } catch {
-      rollbackCartItems(
-        previousCartItems,
-        productId,
-        "수량 변경에 실패했습니다.",
-      );
-      return { status: "failed" };
-    } finally {
-      setPendingMutationCount((count) => Math.max(0, count - 1));
-    }
+    return optimisticMutate<QuantityChangeResult>({
+      productId,
+      applyOptimisticUpdate: (items) =>
+        items.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: nextQuantity }
+            : item,
+        ),
+      request: () => patchQuantity(productId, nextQuantity),
+      rollbackMessage: "수량 변경에 실패했습니다.",
+      onSuccess: () => ({ status: "success" }),
+      onFailure: () => ({ status: "failed" }),
+    });
   };
 
   const removeItem = async (productId: number) => {
-    const previousCartItems = cartItems;
-
-    setCartItems((prev) => prev.filter((item) => item.productId !== productId));
-    setPendingMutationCount((count) => count + 1);
-    setMutationError(null);
-
-    try {
-      const res = await fetch(`${API_URL}/cart/${productId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        throw new Error("상품 삭제에 실패했습니다.");
-      }
-    } catch {
-      rollbackCartItems(previousCartItems, productId, "상품 삭제에 실패했습니다.");
-    } finally {
-      setPendingMutationCount((count) => Math.max(0, count - 1));
-    }
+    await optimisticMutate<void>({
+      productId,
+      applyOptimisticUpdate: (items) =>
+        items.filter((item) => item.productId !== productId),
+      request: () =>
+        fetch(`${API_URL}/cart/${productId}`, {
+          method: "DELETE",
+        }),
+      rollbackMessage: "상품 삭제에 실패했습니다.",
+      onSuccess: () => undefined,
+      onFailure: () => undefined,
+    });
   };
 
   return {
