@@ -16,7 +16,6 @@ import {
   buildFallbackSummary,
   buildOptimisticCoupons,
   buildOptimisticCouponSummary,
-  enforceShippingPolicy,
   toOrderLine,
 } from "../utils/orderSummary";
 
@@ -139,7 +138,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
       const fallbackSummary = buildFallbackSummary(items, isRemoteArea);
       setSummary((prev) =>
         appliedCouponCodes.length > 0
-          ? enforceShippingPolicy(prev, isRemoteArea)
+          ? { ...prev, isRemoteArea }
           : fallbackSummary,
       );
       setIsLoadingOrder(true);
@@ -150,18 +149,13 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
             ? await requestApplyCoupons(items, isRemoteArea, appliedCouponCodes)
             : await requestOrderSummary(items, isRemoteArea);
         if (!ignore) {
-          setSummary(
-            enforceShippingPolicy(
-              alignSummaryItemOrder(nextSummary, items),
-              isRemoteArea,
-            ),
-          );
+          setSummary(alignSummaryItemOrder(nextSummary, items));
         }
       } catch (error) {
         if (!ignore) {
           setSummary((prev) =>
             appliedCouponCodes.length > 0
-              ? enforceShippingPolicy(prev, isRemoteArea)
+              ? { ...prev, isRemoteArea }
               : buildFallbackSummary(items, isRemoteArea),
           );
           setErrorMessage(
@@ -235,7 +229,10 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
     setErrorMessage("");
 
     if (coupons.length === 0) {
-      const optimisticCouponData = buildOptimisticCoupons(items, isRemoteArea);
+      const optimisticCouponData = buildOptimisticCoupons(
+        items,
+        summary.price.shippingFee,
+      );
       setCoupons(optimisticCouponData.coupons);
       setRecommendedCouponCodes(optimisticCouponData.bestCouponCodes);
       setDraftCouponCodes(
@@ -285,12 +282,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
         isRemoteArea,
         draftCouponCodes,
       );
-      setSummary(
-        enforceShippingPolicy(
-          alignSummaryItemOrder(nextSummary, items),
-          isRemoteArea,
-        ),
-      );
+      setSummary(alignSummaryItemOrder(nextSummary, items));
       setAppliedCouponCodes(nextSummary.selectedCouponCodes);
       setDraftCouponCodes(nextSummary.selectedCouponCodes);
     } catch (error) {
@@ -308,7 +300,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
     setDraftCouponCodes(appliedCouponCodes);
     setSummary((prev) =>
       appliedCouponCodes.length > 0
-        ? enforceShippingPolicy(prev, nextIsRemoteArea)
+        ? { ...prev, isRemoteArea: nextIsRemoteArea }
         : buildFallbackSummary(items, nextIsRemoteArea),
     );
   };

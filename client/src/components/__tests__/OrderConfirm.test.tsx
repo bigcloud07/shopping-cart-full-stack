@@ -38,10 +38,88 @@ describe("OrderConfirm 컴포넌트", () => {
     expect(screen.getByText(/1종류의 상품 2개를 주문합니다/)).toBeInTheDocument();
   });
 
-  test("총 결제 금액이 렌더링된다", () => {
+  test("서버가 응답한 총 결제 금액이 렌더링된다", async () => {
+    server.use(
+      http.post("/order", () =>
+        HttpResponse.json({
+          result: "success",
+          data: {
+            orderItems: items.map((item) => ({
+              ...item,
+              lineAmount: item.productPrice * item.quantity,
+            })),
+            selectedCouponCodes: [],
+            appliedCoupons: [],
+            bestCouponCodes: [],
+            price: {
+              orderAmount: 70000,
+              productDiscountAmount: 0,
+              shippingFee: 3000,
+              shippingDiscountAmount: 0,
+              totalDiscountAmount: 0,
+              finalPaymentAmount: 73000,
+            },
+            isRemoteArea: false,
+          },
+        }),
+      ),
+    );
+
     renderOrderConfirm();
 
-    expect(screen.getByText("73,000원")).toBeInTheDocument();
+    expect(await screen.findByText("73,000원")).toBeInTheDocument();
+  });
+
+  test("서버 배송비가 클라이언트 배송 정책과 달라도 서버 응답을 그대로 표시한다", async () => {
+    const highAmountItems: CartItem[] = [
+      {
+        productId: 1,
+        productName: "상품 A",
+        productImg: "",
+        productPrice: 120000,
+        quantity: 1,
+      },
+    ];
+
+    server.use(
+      http.post("/order", () =>
+        HttpResponse.json({
+          result: "success",
+          data: {
+            orderItems: highAmountItems.map((item) => ({
+              ...item,
+              lineAmount: item.productPrice * item.quantity,
+            })),
+            selectedCouponCodes: [],
+            appliedCoupons: [],
+            bestCouponCodes: [],
+            price: {
+              orderAmount: 120000,
+              productDiscountAmount: 0,
+              shippingFee: 3000,
+              shippingDiscountAmount: 0,
+              totalDiscountAmount: 0,
+              finalPaymentAmount: 123000,
+            },
+            isRemoteArea: false,
+          },
+        }),
+      ),
+    );
+
+    render(
+      <OrderConfirm
+        items={highAmountItems}
+        itemCount={1}
+        totalQuantity={1}
+        onReturnToCart={() => {}}
+      />,
+    );
+
+    await waitFor(() => {
+      expectPriceRow("배송비", "3,000원");
+      expectPriceRow("총 결제 금액", "123,000원");
+    });
   });
 
   test("결제하기 버튼 클릭 시 결제 확인 화면을 표시한다", async () => {
@@ -52,7 +130,7 @@ describe("OrderConfirm 컴포넌트", () => {
     expect(screen.getByRole("heading", { name: "결제 확인" })).toBeInTheDocument();
   });
 
-  test("도서 산간 지역 체크 시 서버 응답 전에 결제 금액을 먼저 갱신한다", async () => {
+  test("도서 산간 지역 체크 시 서버 응답의 결제 금액을 표시한다", async () => {
     let resolveOrder: () => void = () => {};
     const pendingOrder = new Promise<void>((resolve) => {
       resolveOrder = resolve;
@@ -90,10 +168,12 @@ describe("OrderConfirm 컴포넌트", () => {
 
     await userEvent.click(screen.getByLabelText("제주도 및 도서 산간 지역"));
 
-    expect(screen.getByText("76,000원")).toBeInTheDocument();
+    expectPriceRow("총 결제 금액", "70,000원");
     expect(screen.getByRole("button", { name: "결제하기" })).toBeEnabled();
 
     resolveOrder();
+
+    expect(await screen.findByText("76,000원")).toBeInTheDocument();
   });
 
   test("주문 금액이 100,000원 이상이면 도서 산간 지역을 체크해도 무료 배송을 유지한다", async () => {

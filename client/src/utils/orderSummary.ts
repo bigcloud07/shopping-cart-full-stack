@@ -6,7 +6,6 @@ import type {
   CouponDiscount,
   OrderSummaryData,
 } from "../type/type";
-import { calculateShippingFee } from "./shippingFee";
 
 const formatWon = (amount: number) => `${amount.toLocaleString()}원`;
 
@@ -61,8 +60,6 @@ export const buildFallbackSummary = (
     (total, item) => total + item.productPrice * item.quantity,
     0,
   );
-  const shippingFee = calculateShippingFee(orderAmount, isRemoteArea);
-
   return {
     orderItems: items.map(toOrderLine),
     selectedCouponCodes: [],
@@ -71,10 +68,10 @@ export const buildFallbackSummary = (
     price: {
       orderAmount,
       productDiscountAmount: 0,
-      shippingFee,
+      shippingFee: 0,
       shippingDiscountAmount: 0,
       totalDiscountAmount: 0,
-      finalPaymentAmount: orderAmount + shippingFee,
+      finalPaymentAmount: orderAmount,
     },
     isRemoteArea,
   };
@@ -188,11 +185,10 @@ const getExpectedDiscountAmount = (
 
 export const buildOptimisticCoupons = (
   items: CartItem[],
-  isRemoteArea: boolean,
+  shippingFee: number,
   now = new Date(),
 ) => {
   const orderAmount = getOrderAmount(items);
-  const shippingFee = calculateShippingFee(orderAmount, isRemoteArea);
   const coupons = DEFAULT_COUPONS.map<CouponAvailability>((coupon) => {
     const unavailableReason = getUnavailableReason(
       coupon,
@@ -287,38 +283,6 @@ export const alignSummaryItemOrder = (
         (orderByProductId.get(a.productId) ?? Number.MAX_SAFE_INTEGER) -
         (orderByProductId.get(b.productId) ?? Number.MAX_SAFE_INTEGER),
     ),
-  };
-};
-
-export const enforceShippingPolicy = (
-  summary: OrderSummaryData,
-  isRemoteArea: boolean,
-): OrderSummaryData => {
-  const shippingFee = calculateShippingFee(
-    summary.price.orderAmount,
-    isRemoteArea,
-  );
-  const shippingDiscountAmount = Math.min(
-    summary.price.shippingDiscountAmount,
-    shippingFee,
-  );
-  const totalDiscountAmount =
-    summary.price.productDiscountAmount + shippingDiscountAmount;
-
-  return {
-    ...summary,
-    isRemoteArea,
-    price: {
-      ...summary.price,
-      shippingFee,
-      shippingDiscountAmount,
-      totalDiscountAmount,
-      finalPaymentAmount:
-        summary.price.orderAmount -
-        summary.price.productDiscountAmount +
-        shippingFee -
-        shippingDiscountAmount,
-    },
   };
 };
 
