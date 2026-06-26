@@ -440,7 +440,7 @@ describe("OrderConfirm 컴포넌트", () => {
     );
   });
 
-  test("쿠폰 API 응답 전에도 첫 모달 오픈 시 쿠폰 목록을 즉시 표시한다", async () => {
+  test("첫 모달 오픈 시 쿠폰 API 응답 전에는 로딩 상태를 표시한다", async () => {
     let resolveCouponRequest: () => void = () => {};
     const pendingCouponRequest = new Promise<void>((resolve) => {
       resolveCouponRequest = resolve;
@@ -453,8 +453,23 @@ describe("OrderConfirm 컴포넌트", () => {
         return HttpResponse.json({
           result: "success",
           data: {
-            coupons: [],
-            bestCouponCodes: [],
+            coupons: [
+              {
+                coupon: {
+                  id: 1,
+                  code: "FIXED5000",
+                  description: "5,000원 할인 쿠폰",
+                  expirationDate: "2026-11-30",
+                  discountType: "fixed",
+                  discountAmount: 5000,
+                  minimumAmount: 10000,
+                },
+                isAvailable: true,
+                unavailableReason: null,
+                expectedDiscountAmount: 5000,
+              },
+            ],
+            bestCouponCodes: ["FIXED5000"],
           },
         });
       }),
@@ -464,13 +479,13 @@ describe("OrderConfirm 컴포넌트", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "쿠폰 적용" }));
 
-    expect(screen.queryByText("쿠폰을 불러오는 중입니다.")).not.toBeInTheDocument();
-    expect(screen.getByText("5,000원 할인 쿠폰")).toBeInTheDocument();
-    expect(screen.getByText("2+1 쿠폰")).toBeInTheDocument();
-    expect(screen.getByText("무료 배송 쿠폰")).toBeInTheDocument();
-    expect(screen.getByText("30% 시간제 할인 쿠폰")).toBeInTheDocument();
+    expect(screen.getByText("쿠폰을 불러오는 중입니다.")).toBeInTheDocument();
+    expect(screen.queryByText("5,000원 할인 쿠폰")).not.toBeInTheDocument();
 
     resolveCouponRequest();
+
+    expect(await screen.findByText("5,000원 할인 쿠폰")).toBeInTheDocument();
+    expect(screen.queryByText("쿠폰을 불러오는 중입니다.")).not.toBeInTheDocument();
   });
 
   test("모달이 열린 뒤 도착한 주문 응답이 추천 쿠폰 체크 상태를 초기화하지 않는다", async () => {
@@ -540,14 +555,14 @@ describe("OrderConfirm 컴포넌트", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "쿠폰 적용" }));
 
-    expect(screen.getByLabelText("무료 배송 쿠폰")).toBeChecked();
+    expect(screen.getByText("쿠폰을 불러오는 중입니다.")).toBeInTheDocument();
 
     resolveOrderRequest();
 
     await waitFor(() => {
       expect(screen.getByText("73,000원")).toBeInTheDocument();
     });
-    expect(screen.getByLabelText("무료 배송 쿠폰")).toBeChecked();
+    expect(screen.queryByText("무료 배송 쿠폰")).not.toBeInTheDocument();
 
     resolveCouponRequest();
 

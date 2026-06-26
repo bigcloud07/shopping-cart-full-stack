@@ -14,8 +14,6 @@ import type {
 import {
   alignSummaryItemOrder,
   buildFallbackSummary,
-  buildOptimisticCoupons,
-  buildOptimisticCouponSummary,
   toOrderLine,
 } from "../utils/orderSummary";
 
@@ -94,7 +92,7 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
   );
 
   const loadCoupons = useCallback(
-    async (showLoading = false) => {
+    async (showLoading = false, syncWhileModalOpen = false) => {
       const requestId = couponRequestIdRef.current + 1;
       couponRequestIdRef.current = requestId;
 
@@ -109,11 +107,16 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
 
         setCoupons(couponData.coupons);
         setRecommendedCouponCodes(couponData.bestCouponCodes);
-        syncDraftCouponCodes(
+        const nextCouponCodes =
           appliedCouponCodes.length > 0
             ? appliedCouponCodes
-            : couponData.bestCouponCodes,
-        );
+            : couponData.bestCouponCodes;
+
+        if (syncWhileModalOpen) {
+          setDraftCouponCodes(nextCouponCodes);
+        } else {
+          syncDraftCouponCodes(nextCouponCodes);
+        }
       } catch (error) {
         if (couponRequestIdRef.current !== requestId) return;
 
@@ -229,18 +232,12 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
     setErrorMessage("");
 
     if (coupons.length === 0) {
-      const optimisticCouponData = buildOptimisticCoupons(
-        items,
-        summary.price.shippingFee,
-      );
-      setCoupons(optimisticCouponData.coupons);
-      setRecommendedCouponCodes(optimisticCouponData.bestCouponCodes);
       setDraftCouponCodes(
         appliedCouponCodes.length > 0
           ? appliedCouponCodes
-          : optimisticCouponData.bestCouponCodes,
+          : recommendedCouponCodes,
       );
-      void loadCoupons(false);
+      void loadCoupons(true, true);
     } else {
       setDraftCouponCodes(
         appliedCouponCodes.length > 0
@@ -269,10 +266,6 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
   };
 
   const applyCoupons = async () => {
-    const previousSummary = summary;
-    setSummary(
-      buildOptimisticCouponSummary(summary, coupons, draftCouponCodes),
-    );
     setIsCouponModalOpen(false);
     setIsLoadingCoupons(true);
     setErrorMessage("");
@@ -286,7 +279,6 @@ export const useOrderConfirm = (items: CartItem[]): UseOrderConfirmReturn => {
       setAppliedCouponCodes(nextSummary.selectedCouponCodes);
       setDraftCouponCodes(nextSummary.selectedCouponCodes);
     } catch (error) {
-      setSummary(previousSummary);
       setErrorMessage(
         error instanceof Error ? error.message : "쿠폰 적용에 실패했습니다.",
       );

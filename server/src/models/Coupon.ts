@@ -56,6 +56,21 @@ export interface CouponDiscount {
   target: CouponDiscountTarget;
 }
 
+interface CouponPolicy<T extends CouponData> {
+  applicationOrder: number;
+  getUnavailableReason(coupon: T, context: CouponContext): string | null;
+  calculateProductDiscount(
+    coupon: T,
+    context: CouponContext,
+    currentProductAmount: number,
+  ): CouponDiscount | null;
+  calculateShippingDiscount(
+    coupon: T,
+    context: CouponContext,
+    shippingFee: number,
+  ): CouponDiscount | null;
+}
+
 export const DEFAULT_COUPONS: CouponData[] = [
   {
     id: 1,
@@ -94,6 +109,153 @@ export const DEFAULT_COUPONS: CouponData[] = [
   },
 ];
 
+const toProductDiscount = (
+  coupon: CouponData,
+  discountAmount: number,
+): CouponDiscount | null => {
+  if (discountAmount <= 0) {
+    return null;
+  }
+
+  return {
+    code: coupon.code,
+    description: coupon.description,
+    discountAmount,
+    target: "product",
+  };
+};
+
+const toShippingDiscount = (
+  coupon: CouponData,
+  discountAmount: number,
+): CouponDiscount | null => {
+  if (discountAmount <= 0) {
+    return null;
+  }
+
+  return {
+    code: coupon.code,
+    description: coupon.description,
+    discountAmount,
+    target: "shipping",
+  };
+};
+
+const findBogoTarget = (
+  coupon: BogoCoupon,
+  orderItems: OrderLine[],
+): OrderLine | null => {
+  const bundleSize = coupon.buyQuantity + coupon.getQuantity;
+  return (
+    orderItems
+      .filter(orderItem => orderItem.quantity >= bundleSize)
+      .sort((a, b) => b.productPrice - a.productPrice)[0] ?? null
+  );
+};
+
+const toMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const isWithinAvailableTime = (
+  coupon: PercentageCoupon,
+  now: Date,
+): boolean => {
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = toMinutes(coupon.availableTime.start);
+  const endMinutes = toMinutes(coupon.availableTime.end);
+
+  return startMinutes <= currentMinutes && currentMinutes < endMinutes;
+};
+
+const fixedCouponPolicy: CouponPolicy<FixedCoupon> = {
+  applicationOrder: 0,
+  getUnavailableReason(coupon, context) {
+    return context.orderAmount < coupon.minimumAmount
+      ? "최소 주문 금액을 충족하지 못했습니다."
+      : null;
+  },
+  calculateProductDiscount(coupon, _context, currentProductAmount) {
+    return toProductDiscount(
+      coupon,
+      Math.min(coupon.discountAmount, currentProductAmount),
+    );
+  },
+  calculateShippingDiscount() {
+    return null;
+  },
+};
+
+const bogoCouponPolicy: CouponPolicy<BogoCoupon> = {
+  applicationOrder: 0,
+  getUnavailableReason(coupon, context) {
+    return findBogoTarget(coupon, context.orderItems) === null
+      ? "2+1 쿠폰을 적용할 수 있는 상품이 없습니다."
+      : null;
+  },
+  calculateProductDiscount(coupon, context, currentProductAmount) {
+    const bogoTarget = findBogoTarget(coupon, context.orderItems);
+    if (!bogoTarget) return null;
+
+    const bundleSize = coupon.buyQuantity + coupon.getQuantity;
+    const freeQuantity =
+      Math.floor(bogoTarget.quantity / bundleSize) * coupon.getQuantity;
+
+    return toProductDiscount(
+      coupon,
+      Math.min(bogoTarget.productPrice * freeQuantity, currentProductAmount),
+    );
+  },
+  calculateShippingDiscount() {
+    return null;
+  },
+};
+
+const freeShippingCouponPolicy: CouponPolicy<FreeShippingCoupon> = {
+  applicationOrder: 0,
+  getUnavailableReason(coupon, context) {
+    return context.orderAmount < coupon.minimumAmount
+      ? "최소 주문 금액을 충족하지 못했습니다."
+      : null;
+  },
+  calculateProductDiscount() {
+    return null;
+  },
+  calculateShippingDiscount(coupon, _context, shippingFee) {
+    return toShippingDiscount(coupon, shippingFee);
+  },
+};
+
+const percentageCouponPolicy: CouponPolicy<PercentageCoupon> = {
+  applicationOrder: 1,
+  getUnavailableReason(coupon, context) {
+    return isWithinAvailableTime(coupon, context.now)
+      ? null
+      : "쿠폰 적용 시간이 아닙니다.";
+  },
+  calculateProductDiscount(coupon, _context, currentProductAmount) {
+    const rate =
+      coupon.discountRate > 1
+        ? coupon.discountRate / 100
+        : coupon.discountRate;
+    return toProductDiscount(coupon, Math.floor(currentProductAmount * rate));
+  },
+  calculateShippingDiscount() {
+    return null;
+  },
+};
+
+const couponPolicies = {
+  fixed: fixedCouponPolicy,
+  bogo: bogoCouponPolicy,
+  freeShipping: freeShippingCouponPolicy,
+  percentage: percentageCouponPolicy,
+};
+
+const getCouponPolicy = <T extends CouponData>(coupon: T): CouponPolicy<T> =>
+  couponPolicies[coupon.discountType] as CouponPolicy<T>;
+
 export default class Coupon {
   constructor(private readonly coupon: CouponData) {}
 
@@ -105,34 +267,19 @@ export default class Coupon {
     return this.coupon.code;
   }
 
+  get applicationOrder(): number {
+    return getCouponPolicy(this.coupon).applicationOrder;
+  }
+
   getUnavailableReason(context: CouponContext): string | null {
     if (this.#isExpired(context.now)) {
       return "만료된 쿠폰입니다.";
     }
 
-    if (
-      (this.coupon.discountType === "fixed" ||
-        this.coupon.discountType === "freeShipping") &&
-      context.orderAmount < this.coupon.minimumAmount
-    ) {
-      return "최소 주문 금액을 충족하지 못했습니다.";
-    }
-
-    if (
-      this.coupon.discountType === "bogo" &&
-      this.#findBogoTarget(context.orderItems) === null
-    ) {
-      return "2+1 쿠폰을 적용할 수 있는 상품이 없습니다.";
-    }
-
-    if (
-      this.coupon.discountType === "percentage" &&
-      !this.#isWithinAvailableTime(context.now)
-    ) {
-      return "쿠폰 적용 시간이 아닙니다.";
-    }
-
-    return null;
+    return getCouponPolicy(this.coupon).getUnavailableReason(
+      this.coupon,
+      context,
+    );
   }
 
   isAvailable(context: CouponContext): boolean {
@@ -147,79 +294,25 @@ export default class Coupon {
       return null;
     }
 
-    if (this.coupon.discountType === "fixed") {
-      return this.#toProductDiscount(
-        Math.min(this.coupon.discountAmount, currentProductAmount),
-      );
-    }
-
-    if (this.coupon.discountType === "bogo") {
-      const bogoTarget = this.#findBogoTarget(context.orderItems);
-      if (!bogoTarget) return null;
-
-      const bundleSize = this.coupon.buyQuantity + this.coupon.getQuantity;
-      const freeQuantity =
-        Math.floor(bogoTarget.quantity / bundleSize) * this.coupon.getQuantity;
-
-      return this.#toProductDiscount(
-        Math.min(bogoTarget.productPrice * freeQuantity, currentProductAmount),
-      );
-    }
-
-    if (this.coupon.discountType === "percentage") {
-      const rate =
-        this.coupon.discountRate > 1
-          ? this.coupon.discountRate / 100
-          : this.coupon.discountRate;
-      return this.#toProductDiscount(Math.floor(currentProductAmount * rate));
-    }
-
-    return null;
+    return getCouponPolicy(this.coupon).calculateProductDiscount(
+      this.coupon,
+      context,
+      currentProductAmount,
+    );
   }
 
   calculateShippingDiscount(
     context: CouponContext,
     shippingFee: number,
   ): CouponDiscount | null {
-    if (
-      this.coupon.discountType !== "freeShipping" ||
-      !this.isAvailable(context) ||
-      shippingFee <= 0
-    ) {
+    if (!this.isAvailable(context) || shippingFee <= 0) {
       return null;
     }
 
-    return {
-      code: this.coupon.code,
-      description: this.coupon.description,
-      discountAmount: shippingFee,
-      target: "shipping",
-    };
-  }
-
-  #toProductDiscount(discountAmount: number): CouponDiscount | null {
-    if (discountAmount <= 0) {
-      return null;
-    }
-
-    return {
-      code: this.coupon.code,
-      description: this.coupon.description,
-      discountAmount,
-      target: "product",
-    };
-  }
-
-  #findBogoTarget(orderItems: OrderLine[]): OrderLine | null {
-    if (this.coupon.discountType !== "bogo") {
-      return null;
-    }
-
-    const bundleSize = this.coupon.buyQuantity + this.coupon.getQuantity;
-    return (
-      orderItems
-        .filter(orderItem => orderItem.quantity >= bundleSize)
-        .sort((a, b) => b.productPrice - a.productPrice)[0] ?? null
+    return getCouponPolicy(this.coupon).calculateShippingDiscount(
+      this.coupon,
+      context,
+      shippingFee,
     );
   }
 
@@ -230,20 +323,4 @@ export default class Coupon {
     return expirationTime < now.getTime();
   }
 
-  #isWithinAvailableTime(now: Date): boolean {
-    if (this.coupon.discountType !== "percentage") {
-      return true;
-    }
-
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const startMinutes = this.#toMinutes(this.coupon.availableTime.start);
-    const endMinutes = this.#toMinutes(this.coupon.availableTime.end);
-
-    return startMinutes <= currentMinutes && currentMinutes < endMinutes;
-  }
-
-  #toMinutes(time: string): number {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
-  }
 }

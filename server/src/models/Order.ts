@@ -169,17 +169,10 @@ export default class Order {
   }
 
   #sortCouponsByApplicationOrder(coupons: CouponData[]): CouponData[] {
-    return [...coupons].sort((a, b) => {
-      if (a.discountType === "percentage" && b.discountType !== "percentage") {
-        return 1;
-      }
-
-      if (a.discountType !== "percentage" && b.discountType === "percentage") {
-        return -1;
-      }
-
-      return 0;
-    });
+    return [...coupons].sort(
+      (a, b) =>
+        new Coupon(a).applicationOrder - new Coupon(b).applicationOrder,
+    );
   }
 
   #createCouponCombinations(coupons: CouponData[]): CouponData[][] {
