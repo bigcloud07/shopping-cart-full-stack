@@ -107,4 +107,34 @@ describe("Cart 컴포넌트 - 수량 경계값", () => {
       "수량은 1개 이상부터 가능합니다.",
     );
   });
+
+  test("네트워크 오류로 수량 변경 요청이 실패해도 한국어 실패 메시지를 보여준다", async () => {
+    const cartItem = {
+      productId: 1,
+      productName: "상품 A",
+      productImg: "",
+      productPrice: 10000,
+      quantity: 2,
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockCartResponse([cartItem])),
+        })
+        .mockRejectedValueOnce(new TypeError("Failed to fetch")),
+    );
+
+    render(<Cart />);
+    await waitFor(() => screen.getByText("상품 A"));
+
+    await userEvent.click(screen.getByText("+"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "수량 변경에 실패했습니다.",
+    );
+    expect(screen.queryByText("Failed to fetch")).not.toBeInTheDocument();
+  });
 });
