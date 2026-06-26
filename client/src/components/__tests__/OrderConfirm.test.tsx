@@ -440,6 +440,47 @@ describe("OrderConfirm 컴포넌트", () => {
     );
   });
 
+  test("쿠폰 목록은 서버 응답의 설명과 할인 정보를 그대로 표시한다", async () => {
+    server.use(
+      http.get("/coupon", () =>
+        HttpResponse.json({
+          result: "success",
+          data: {
+            coupons: [
+              {
+                coupon: {
+                  id: 1,
+                  code: "FIXED5000",
+                  description: "서버가 내려준 특별 할인 쿠폰",
+                  expirationDate: "2026-12-31",
+                  discountType: "fixed",
+                  discountAmount: 7777,
+                  minimumAmount: 12345,
+                },
+                isAvailable: true,
+                unavailableReason: null,
+                expectedDiscountAmount: 7777,
+              },
+            ],
+            bestCouponCodes: ["FIXED5000"],
+          },
+        }),
+      ),
+    );
+
+    renderOrderConfirm();
+
+    await userEvent.click(screen.getByRole("button", { name: "쿠폰 적용" }));
+
+    const couponDialog = await screen.findByRole("dialog", {
+      name: "쿠폰 선택",
+    });
+    expect(couponDialog).toHaveTextContent("서버가 내려준 특별 할인 쿠폰");
+    expect(couponDialog).toHaveTextContent("최소 주문 금액: 12,345원");
+    expect(couponDialog).toHaveTextContent("예상 할인: 7,777원");
+    expect(couponDialog).not.toHaveTextContent("5,000원 할인 쿠폰");
+  });
+
   test("첫 모달 오픈 시 쿠폰 API 응답 전에는 로딩 상태를 표시한다", async () => {
     let resolveCouponRequest: () => void = () => {};
     const pendingCouponRequest = new Promise<void>((resolve) => {

@@ -13,7 +13,7 @@ export interface CartItemResponse {
   };
 }
 
-export type CouponCode = "FIXED5000" | "BOGO" | "FREESHIPPING" | "MIRACLESALE";
+export type CouponCode = string;
 
 interface CouponBase {
   id: number;
